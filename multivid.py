@@ -44,8 +44,8 @@ class Search(object):
 
     def autocomplete(self, query):
         """
-        Get the list of strings suggested by the autocomplete search for some
-        query, partial or otherwise. If no suggestions are found, or
+        Get the list of lowercase strings suggested by the autocomplete search
+        for some query, partial or otherwise. If no suggestions are found, or
         autocomplete is not supported, this should return an empty list.
         """
 
@@ -130,7 +130,7 @@ class HuluSearch(Search):
             # throw out query strings from result
             json = filter(lambda s: not isinstance(s, basestring), response.json)
             if len(json) > 0:
-                return json[0]
+                return [s.lower() for s in json[0]]
 
         # default to returning no results
         return []
