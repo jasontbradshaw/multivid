@@ -135,6 +135,36 @@ class HuluSearch(Search):
         # default to returning no results
         return []
 
+class AmazonSearch(Search):
+    def __init__(self):
+        # URLs we request data from
+        self.autocomplete_url = "http://completion.amazon.com/search/complete"
+
+        # the maximum rating a video may receive
+        self.rating_max = 5
+
+        Search.__init__(self, supports_autocomplete=True)
+
+    def autocomplete(self, query):
+        params = {
+            "method": "completion",
+            "mkt": 1,
+            "client": "amazon-search-ui",
+            "search-alias": "instant-video",
+
+            "q": query
+        }
+
+        response = requests.get(self.autocomplete_url, params=params)
+
+        # if we got JSON data back, parse it
+        if response.json is not None and len(response.json) > 1:
+            # skip the query itself and return the suggestion list
+            return [s.lower() for s in response.json[1]]
+
+        # default to returning no results
+        return []
+
 if __name__ == "__main__":
     from pprint import pprint as pp
 
