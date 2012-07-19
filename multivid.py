@@ -2,16 +2,24 @@ import bs4
 import requests
 import arequests
 
-class Result:
-    """A search result."""
+class SearchResult:
+    """A video search result."""
 
     def __init__(self):
         self.title = None
         self.description = None
         self.rating_fraction = None
-        self.site_link = None
-        self.direct_link = None
-        self.thumbnail_link = None
+        self.video_url = None
+        self.thumbnail_url = None
+
+    def to_dict(self):
+        return {
+            "title": self.title,
+            "description": self.description,
+            "rating_fraction": self.rating_fraction,
+            "video_url": self.video_url,
+            "thumbnail_url": self.thumbnail_url
+        }
 
 class Search(object):
     """
@@ -49,8 +57,11 @@ class Search(object):
 class HuluSearch(Search):
     def __init__(self):
         # URLs we request data from
-        self.search_url = "http://www.hulu.com/search"
+        self.search_url = "http://m.hulu.com/search"
         self.autocomplete_url = "http://www.hulu.com/search/suggest_json"
+
+        # the maximum rating a video may receive
+        self.rating_max = 5
 
         Search.__init__(self, supports_autocomplete=True)
 
@@ -69,15 +80,43 @@ class HuluSearch(Search):
 
         # build the requests
         tv_request = arequests.get(self.search_url, params=tv_params)
-        movie_request = arequests.get(self.search_url, params=tv_params)
+        movie_request = arequests.get(self.search_url, params=movie_params)
 
         # get both requests and parse their XML payloads
         tv_response, movie_response = arequests.map((tv_request, movie_request))
 
-        tv_xml = bs4.BeautifulSoup(tv_response.text, "xml")
-        movie_xml = bs4.BeautifulSoup(movie_response.text, "xml")
+        tv_soup = bs4.BeautifulSoup(tv_response.text)
+        movie_soup = bs4.BeautifulSoup(movie_response.text)
 
-        print tv_xml, movie_xml
+        results = []
+        for video in tv_soup.find("videos").find_all("video"):
+            r = SearchResult()
+
+            # title it show title: episode title for tv shows
+            r.title = unicode(video.show.find("name").string)
+            r.title += ": " + unicode(video.title.string)
+
+            r.description = unicode(video.description.string)
+            r.rating_fraction = float(video.rating.string) / self.rating_max
+            r.video_url = u"http://www.hulu.com/watch/" + video.id.string
+            r.thumbnail_url = unicode(video.find("thumbnail-url").string)
+
+            results.append(r)
+
+        for video in movie_soup.find("videos").find_all("video"):
+            r = SearchResult()
+
+            # movie names are just the title
+            r.title = unicode(video.title.string)
+
+            r.description = unicode(video.description.string)
+            r.rating_fraction = float(video.rating.string) / self.rating_max
+            r.video_url = u"http://www.hulu.com/watch/" + video.id.string
+            r.thumbnail_url = unicode(video.find("thumbnail-url").string)
+
+            results.append(r)
+
+        return results
 
     def autocomplete(self, query):
         params = {
@@ -95,3 +134,10 @@ class HuluSearch(Search):
 
         # default to returning no results
         return []
+
+if __name__ == "__main__":
+    from pprint import pprint as pp
+
+    h = HuluSearch()
+    pp(h.autocomplete("c"))
+    pp(map(lambda x: x.to_dict(), h.find("c")))
