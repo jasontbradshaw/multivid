@@ -98,7 +98,7 @@ class HuluSearch(Search):
         movie_soup = bs4.BeautifulSoup(movie_response.text)
 
         results = []
-        for video in tv_soup.videos("video"):
+        for video in tv_soup.videos("video", recursive=False):
             r = Result()
 
             # title it show title: episode title for tv shows
@@ -112,7 +112,7 @@ class HuluSearch(Search):
 
             results.append(r)
 
-        for video in movie_soup.videos("video"):
+        for video in movie_soup.videos("video", recursive=False):
             r = Result()
 
             # movie names are just the title
@@ -230,7 +230,7 @@ class AmazonSearch(Search):
             soup = bs4.BeautifulSoup(response.text)
 
             # iterate over all the item nodes
-            for item in soup.items("item"):
+            for item in soup.items("item", recursive=False):
                 r = Result()
 
                 r.title = unicode(item.itemattributes.title.string)
