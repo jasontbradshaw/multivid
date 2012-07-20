@@ -2,7 +2,7 @@ import bs4
 import requests
 import arequests
 
-class SearchResult:
+class Result:
     """A video search result."""
 
     def __init__(self):
@@ -90,7 +90,7 @@ class HuluSearch(Search):
 
         results = []
         for video in tv_soup.find("videos").find_all("video"):
-            r = SearchResult()
+            r = Result()
 
             # title it show title: episode title for tv shows
             r.title = unicode(video.show.find("name").string)
@@ -104,7 +104,7 @@ class HuluSearch(Search):
             results.append(r)
 
         for video in movie_soup.find("videos").find_all("video"):
-            r = SearchResult()
+            r = Result()
 
             # movie names are just the title
             r.title = unicode(video.title.string)
