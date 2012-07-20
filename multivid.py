@@ -213,7 +213,10 @@ class AmazonSearch(Search):
             Operation="ItemSearch",
             SearchIndex="UnboxVideo", # seems to be mostly instant video
             Availability="Available",
-            ResponseGroup="ItemAttributes,Images", # item data, image urls
+
+            # related items, item data, image urls
+            ResponseGroup="RelatedItems,ItemAttributes,Images",
+            RelationshipType="Episode", # so we can get season name
 
             Keywords=query
         )
@@ -233,7 +236,21 @@ class AmazonSearch(Search):
             for item in soup.items("item", recursive=False):
                 r = Result()
 
-                r.title = unicode(item.itemattributes.title.string)
+                title = u""
+
+                # prefix the title with the season name if possible
+                if item.relateditems is not None:
+                    attrs = item.relateditems("itemattributes")
+                    if len(attrs) > 0:
+                        prod_group = attrs[0].productgroup.string
+                        if prod_group.lower().count("season") > 0:
+                            title += attrs[0].title.string
+                            title += ": "
+
+                # add the item's direct title
+                title += item.itemattributes.title.string
+                r.title = title
+
                 r.video_url = unicode(item.detailpageurl.string)
                 r.thumbnail_url = unicode(item.largeimage.url.string)
 
