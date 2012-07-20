@@ -222,7 +222,6 @@ class AmazonSearch(Search):
             r = arequests.get(self.search_url, params=params)
             search_requests.append(r)
 
-        # TODO: great candidate for an arequests.imap() implementation
         # get all the items from the responses as soup objects
         results = []
         for response in arequests.map(search_requests):
