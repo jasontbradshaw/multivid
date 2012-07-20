@@ -1,5 +1,12 @@
+import base64
+import hashlib
+import hmac
+import urllib
+import time
+
 import bs4
 import requests
+
 import arequests
 
 class Result:
@@ -89,7 +96,7 @@ class HuluSearch(Search):
         movie_soup = bs4.BeautifulSoup(movie_response.text)
 
         results = []
-        for video in tv_soup.find("videos").find_all("video"):
+        for video in tv_soup.videos.find_all("video"):
             r = Result()
 
             # title it show title: episode title for tv shows
@@ -103,7 +110,7 @@ class HuluSearch(Search):
 
             results.append(r)
 
-        for video in movie_soup.find("videos").find_all("video"):
+        for video in movie_soup.videos.find_all("video"):
             r = Result()
 
             # movie names are just the title
@@ -138,12 +145,101 @@ class HuluSearch(Search):
 class AmazonSearch(Search):
     def __init__(self):
         # URLs we request data from
+        self.search_url = "http://webservices.amazon.com/onca/xml"
         self.autocomplete_url = "http://completion.amazon.com/search/complete"
+
+        # Amazon API keys
+        self.access_key_id = ""
+        self.secret_access_key = ""
 
         # the maximum rating a video may receive
         self.rating_max = 5
 
+        # the number of pages of results to retrieve from the API
+        self.pages_to_get = 3
+
         Search.__init__(self, supports_autocomplete=True)
+
+    @staticmethod
+    def build_params(http_method, access_key_id, secret_access_key, **params):
+        """
+        Builds a signed dict of params acceptable to Amazon. Adds the
+        'Timestamp' param automatically
+        """
+
+        # allow only GET or POST requests
+        assert http_method.lower() in {"get", "post"}
+
+        # add the timestamp and access key id params
+        params["Timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        params["AWSAccessKeyId"] = access_key_id
+
+        # quote and store all the keys and values of the sorted params
+        query_string_builder = []
+        for param in sorted(params.keys()):
+            query_string_builder.append(param)
+            query_string_builder.append("=")
+            query_string_builder.append(urllib.quote(str(params[param]), "~"))
+            query_string_builder.append("&")
+        query_string_builder.pop()
+
+        # build the canonical query string
+        canonicalized_query_string = "".join(query_string_builder)
+
+        # join with the HTTP method, host header, and HTTP request URI
+        str_to_sign_builder = [http_method.upper()]
+        str_to_sign_builder.append("webservices.amazon.com")
+        str_to_sign_builder.append("/onca/xml")
+        str_to_sign_builder.append(canonicalized_query_string)
+
+        # join the strings with newlines
+        str_to_sign = "\n".join(str_to_sign_builder)
+
+        # sign the string using the secret key and sha256
+        signer = hmac.new(secret_access_key, str_to_sign, hashlib.sha256)
+
+        # add the signature to the original params and return them
+        params["Signature"] = base64.b64encode(signer.digest())
+        return params
+
+    def find(self, query):
+        params = AmazonSearch.build_params(
+            "GET", self.access_key_id, self.secret_access_key,
+            Service="AWSECommerceService", # default according to docs
+            AssociateTag="N/A", # dummy tag, we don't need one
+            Version="2011-08-01", # the latest version as of 7/12
+            Operation="ItemSearch",
+            SearchIndex="UnboxVideo", # seems to be mostly instant video
+            ResponseGroup="ItemAttributes,Images", # item data and image urls
+            Keywords=query
+        )
+
+        # get all the pages of results at once
+        search_requests = []
+        for i in xrange(1, self.pages_to_get + 1):
+            r = arequests.get(self.search_url, params=params)
+            search_requests.append(r)
+
+        # TODO: great candidate for an arequests.imap() implementation
+        # get all the items from the responses as soup objects
+        results = []
+        for response in arequests.map(search_requests):
+            soup = bs4.BeautifulSoup(response.text)
+
+            # iterate over all the item nodes
+            for item in soup.find("items").find_all("item"):
+                r = Result()
+
+                # NOTE: description and rating_fraction don't come back in the
+                # results, and would take too long to scrape. we leave them
+                # unset.
+                r.title = unicode(item.itemattributes.title.string)
+                r.video_url = unicode(item.detailpageurl.string)
+                r.thumbnail_url = unicode(item.largeimage.url.string)
+
+                results.append(r)
+
+        return results
 
     def autocomplete(self, query):
         params = {
@@ -168,6 +264,16 @@ class AmazonSearch(Search):
 if __name__ == "__main__":
     from pprint import pprint as pp
 
+    to_dict = lambda r: r.to_dict()
+
+    print "Hulu:"
     h = HuluSearch()
-    pp(h.autocomplete("c"))
-    pp(map(lambda x: x.to_dict(), h.find("c")))
+    pp(h.autocomplete("d"))
+    pp(map(to_dict, h.find("downton")))
+    print
+
+    print "Amazon:"
+    a = AmazonSearch()
+    pp(a.autocomplete("d"))
+    pp(map(to_dict, a.find("downton")))
+    print
