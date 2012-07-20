@@ -248,7 +248,6 @@ class AmazonSearch(Search):
             "mkt": 1,
             "client": "amazon-search-ui",
             "search-alias": "instant-video",
-
             "q": query
         }
 
