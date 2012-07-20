@@ -98,7 +98,7 @@ class HuluSearch(Search):
         movie_soup = bs4.BeautifulSoup(movie_response.text)
 
         results = []
-        for video in tv_soup.videos.find_all("video"):
+        for video in tv_soup.videos("video"):
             r = Result()
 
             # title it show title: episode title for tv shows
@@ -112,7 +112,7 @@ class HuluSearch(Search):
 
             results.append(r)
 
-        for video in movie_soup.videos.find_all("video"):
+        for video in movie_soup.videos("video"):
             r = Result()
 
             # movie names are just the title
@@ -158,7 +158,7 @@ class AmazonSearch(Search):
         self.rating_max = 5
 
         # the number of pages of results to retrieve from the API
-        self.pages_to_get = 3
+        self.pages_to_get = 2
 
         Search.__init__(self, supports_autocomplete=True)
 
@@ -212,7 +212,9 @@ class AmazonSearch(Search):
             Version="2011-08-01", # the latest version as of 7/12
             Operation="ItemSearch",
             SearchIndex="UnboxVideo", # seems to be mostly instant video
-            ResponseGroup="ItemAttributes,Images", # item data and image urls
+            Availability="Available",
+            ResponseGroup="ItemAttributes,Images", # item data, image urls
+
             Keywords=query
         )
 
@@ -228,15 +230,16 @@ class AmazonSearch(Search):
             soup = bs4.BeautifulSoup(response.text)
 
             # iterate over all the item nodes
-            for item in soup.find("items").find_all("item"):
+            for item in soup.items("item"):
                 r = Result()
+
+                r.title = unicode(item.itemattributes.title.string)
+                r.video_url = unicode(item.detailpageurl.string)
+                r.thumbnail_url = unicode(item.largeimage.url.string)
 
                 # NOTE: description and rating_fraction don't come back in the
                 # results, and would take too long to scrape. we leave them
                 # unset.
-                r.title = unicode(item.itemattributes.title.string)
-                r.video_url = unicode(item.detailpageurl.string)
-                r.thumbnail_url = unicode(item.largeimage.url.string)
 
                 results.append(r)
 
@@ -268,12 +271,12 @@ if __name__ == "__main__":
 
     print "Hulu:"
     h = HuluSearch()
-    pp(h.autocomplete("d"))
-    pp(map(to_dict, h.find("downton")))
+    pp(h.autocomplete("c"))
+    pp(map(to_dict, h.find("c")))
     print
 
     print "Amazon:"
     a = AmazonSearch()
-    pp(a.autocomplete("d"))
-    pp(map(to_dict, a.find("downton")))
+    pp(a.autocomplete("c"))
+    pp(map(to_dict, a.find("c")))
     print
