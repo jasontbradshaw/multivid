@@ -1,0 +1,10 @@
+{
+    "amazon": {
+        "public_key": "",
+        "private_key": ""
+    },
+    "netflix": {
+        "public_key": "",
+        "private_key": ""
+    }
+}

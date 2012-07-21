@@ -3,7 +3,8 @@
 import base64
 import hashlib
 import hmac
-import oauth.oauth as oauth
+import json
+import os
 import random
 import string
 import time
@@ -70,6 +71,15 @@ class SeriesResult(Result):
 class Search(object):
     """Base class for search plugins."""
 
+    def __init__(self, config_file="multivid.conf"):
+        # set the config file if one is needed/was specified
+        self.config_file = None
+        if config_file is not None:
+            self.config_file = os.path.abspath(config_file)
+
+        # where the loaded config file is cached once read
+        self.__config = None
+
     def find(self, query):
         """
         Synchonously run a search for some query and return the list of results.
@@ -87,6 +97,38 @@ class Search(object):
 
         raise NotImplemented("autocomplete must be implemented!")
 
+    @property
+    def config(self):
+        """Return the JSON config file contents."""
+
+        # return the cached value if it exists
+        if self.__config is not None:
+            return self.__config
+
+        # only load the file if one was specified and the file exists
+        config = None
+        if self.config_file is not None:
+            # raise an error if there's no such config file
+            if not os.path.exists(self.config_file):
+                raise ValueError("config file could not be located: " +
+                        self.config_file)
+
+            # load and parse the config file if it does exist
+            with open(self.config_file, 'r') as cf:
+                try:
+                    config = json.load(cf)
+                except ValueError:
+                    # return None if the config failed to parse
+                    config = None
+        else:
+            # if there was no config specified, return an empty config
+            config = {}
+
+        # cache the loaded config file before returning it
+        self.__config = config
+
+        return config
+
 class HuluSearch(Search):
     def __init__(self):
         # URLs we request data from
@@ -94,9 +136,9 @@ class HuluSearch(Search):
         self.autocomplete_url = "http://www.hulu.com/search/suggest_json"
 
         # the maximum rating a video may receive
-        self.rating_max = 5
+        self.rating_max = 5.0
 
-        Search.__init__(self)
+        Search.__init__(self, config_file=None)
 
     def find(self, query):
         # we make two requests, one for movies and one for TV shows. this is to
@@ -170,28 +212,24 @@ class HuluSearch(Search):
         return []
 
 class AmazonSearch(Search):
-    def __init__(self):
+    def __init__(self, config_file="multivid.conf"):
         # URLs we request data from
         self.search_url = "http://webservices.amazon.com/onca/xml"
         self.autocomplete_url = "http://completion.amazon.com/search/complete"
 
-        # Amazon API keys
-        self.access_key_id = ""
-        self.secret_access_key = ""
-
         # the maximum rating a video may receive
-        self.rating_max = 5
+        self.rating_max = 5.0
 
         # the number of pages of results to retrieve from the API
         self.pages_to_get = 2
 
-        Search.__init__(self)
+        Search.__init__(self, config_file)
 
     @staticmethod
-    def build_params(http_method, access_key_id, secret_access_key, **params):
+    def build_params(http_method, public_key, private_key, **params):
         """
         Builds a signed dict of params acceptable to Amazon. Adds the
-        'Timestamp' param automatically
+        'Timestamp' param automatically.
         """
 
         # allow only GET or POST requests
@@ -199,7 +237,7 @@ class AmazonSearch(Search):
 
         # add the timestamp and access key id params
         params["Timestamp"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        params["AWSAccessKeyId"] = access_key_id
+        params["AWSAccessKeyId"] = public_key
 
         # quote and store all the keys and values of the sorted params
         query_string_builder = []
@@ -223,15 +261,19 @@ class AmazonSearch(Search):
         str_to_sign = "\n".join(str_to_sign_builder)
 
         # sign the string using the secret key and sha256
-        signer = hmac.new(secret_access_key, str_to_sign, hashlib.sha256)
+        signer = hmac.new(str(private_key), str_to_sign, hashlib.sha256)
 
         # add the signature to the original params and return them
         params["Signature"] = base64.b64encode(signer.digest())
         return params
 
     def find(self, query):
+        # get the keys from the config
+        public_key = self.config["amazon"]["public_key"]
+        private_key = self.config["amazon"]["private_key"]
+
         params = AmazonSearch.build_params(
-            "GET", self.access_key_id, self.secret_access_key,
+            "GET", public_key, private_key,
             Service="AWSECommerceService", # default according to docs
             AssociateTag="N/A", # dummy tag, we don't need one
             Version="2011-08-01", # the latest version as of 7/12
@@ -324,22 +366,18 @@ class AmazonSearch(Search):
         return []
 
 class NetflixSearch(Search):
-    def __init__(self):
+    def __init__(self, config_file="multivid.conf"):
         base_url = "http://api-public.netflix.com"
         self.search_url = base_url + "/catalog/titles"
         self.autocomplete_url = base_url + "/catalog/titles/autocomplete"
 
         # the maximum number of starts a title may be rated
-        self.rating_max = 5
+        self.rating_max = 5.0
 
-        # our private netflix keys
-        self.consumer_key = ""
-        self.shared_secret = ""
-
-        Search.__init__(self)
+        Search.__init__(self, config_file)
 
     @staticmethod
-    def build_params(http_method, url, consumer_key, shared_secret, **params):
+    def build_params(http_method, url, public_key, private_key, **params):
         """
         OAuth-encodes and signs the given parameters for some request, adding
         the nonce, timestamp, and other required parameters along the way.
@@ -353,7 +391,7 @@ class NetflixSearch(Search):
 
         # add required params
         params["oauth_version"] = "1.0"
-        params["oauth_consumer_key"] = consumer_key
+        params["oauth_consumer_key"] = public_key
         params["oauth_signature_method"] = "HMAC-SHA1"
 
         # generate a nonce and the timestamp
@@ -379,15 +417,19 @@ class NetflixSearch(Search):
         str_to_sign = "&".join(base_str_builder)
 
         # sign the string
-        signer = hmac.new(shared_secret + "&", str_to_sign, hashlib.sha1)
+        signer = hmac.new(str(private_key) + "&", str_to_sign, hashlib.sha1)
 
         # add the signature to the original params and return them
         params["oauth_signature"] = base64.b64encode(signer.digest())
         return params
 
     def find(self, query):
+        # get the keys from the config
+        public_key = self.config["netflix"]["public_key"]
+        private_key = self.config["netflix"]["private_key"]
+
         params = NetflixSearch.build_params(
-            "GET", self.search_url, self.consumer_key, self.shared_secret,
+            "GET", self.search_url, public_key, private_key,
             v=2.0, # use the newest API version (JSON support, filters, etc.)
             output="json", # we want JSON responses, not XML
 
@@ -418,7 +460,7 @@ class NetflixSearch(Search):
 
             r.title = item["title"]["regular"]
             r.description = item["synopsis"]["short_synopsis"]
-            r.rating_fraction = self.rating_max / float(item["average_rating"])
+            r.rating_fraction = item["average_rating"] / self.rating_max
             r.url = item["web_page"]
 
             # pick the largest image size available
@@ -444,7 +486,7 @@ class NetflixSearch(Search):
 
     def autocomplete(self, query):
         params = {
-            "oauth_consumer_key": self.consumer_key,
+            "oauth_consumer_key": self.config["netflix"]["public_key"],
             "term": query
         }
 
