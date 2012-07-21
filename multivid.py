@@ -460,23 +460,37 @@ class NetflixSearch(Search):
 
 if __name__ == "__main__":
     from pprint import pprint as pp
+    import sys
 
     to_dict = lambda r: r.to_dict()
 
-    print "Hulu:"
     h = HuluSearch()
-    pp(h.autocomplete("c"))
-    pp(map(to_dict, h.find("c")))
-    print
-
-    print "Amazon:"
     a = AmazonSearch()
-    pp(a.autocomplete("c"))
-    pp(map(to_dict, a.find("c")))
+    n = NetflixSearch()
+
+    # get the query from the first argument or from user input
+    if len(sys.argv) > 1:
+        query = sys.argv[1]
+    else:
+        query = raw_input("search: ")
+
+    # get a shorter query to use for autocomplete
+    ac_query = query[0:3]
+
+    print "autocomplete results for '" + ac_query + "':"
+    autocomplete_results = {}
+    autocomplete_results["amazon"] = a.autocomplete(ac_query)
+    autocomplete_results["hulu"] = h.autocomplete(ac_query)
+    autocomplete_results["netflix"] = n.autocomplete(ac_query)
+
+    pp(autocomplete_results)
     print
 
-    print "Netflix:"
-    n = NetflixSearch()
-    pp(n.autocomplete("c"))
-    pp(map(to_dict, n.find("c")))
+    print "search results for '" + query + "':"
+    search_results = {}
+    search_results["amazon"] = map(to_dict, a.find(query))
+    search_results["hulu"] = map(to_dict, h.find(query))
+    search_results["netflix"] = map(to_dict, n.find(query))
+
+    pp(search_results)
     print
