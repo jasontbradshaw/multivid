@@ -14,6 +14,7 @@ import requests
 
 import arequests
 import common
+import thread_pool
 
 class HuluSearch(common.Search):
     def __init__(self):
@@ -402,23 +403,30 @@ if __name__ == "__main__":
     else:
         query = raw_input("search: ")
 
+    # perform searches in parallel
+    pool = thread_pool.Pool(3)
+
     # get a shorter query to use for autocomplete
     ac_query = query[0:3]
 
-    print "autocomplete results for '" + ac_query + "':"
-    autocomplete_results = {}
-    autocomplete_results["amazon"] = a.autocomplete(ac_query)
-    autocomplete_results["hulu"] = h.autocomplete(ac_query)
-    autocomplete_results["netflix"] = n.autocomplete(ac_query)
+    ac_results = pool.map(lambda s: s.autocomplete(ac_query), (a, h, n))
+    autocomplete_results = {
+        "amazon": ac_results[0],
+        "hulu": ac_results[1],
+        "netflix": ac_results[2],
+    }
 
+    print "autocomplete results for '" + ac_query + "':"
     pp(autocomplete_results)
     print
 
-    print "search results for '" + query + "':"
-    search_results = {}
-    search_results["amazon"] = map(to_dict, a.find(query))
-    search_results["hulu"] = map(to_dict, h.find(query))
-    search_results["netflix"] = map(to_dict, n.find(query))
+    results = pool.map(lambda s: s.find(query), (a, h, n))
+    search_results = {
+        "amazon": map(to_dict, results[0]),
+        "hulu": map(to_dict, results[1]),
+        "netflix": map(to_dict, results[2])
+    }
 
+    print "search results for '" + query + "':"
     pp(search_results)
     print
