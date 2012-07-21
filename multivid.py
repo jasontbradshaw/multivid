@@ -17,7 +17,12 @@ import arequests
 class Result:
     """A basic search result."""
 
+    MOVIE = "movie"
+    EPISODE = "episode"
+    SERIES = "series"
+
     def __init__(self, result_type):
+        assert result_type in {Result.MOVIE, Result.EPISODE, Result.SERIES}
         self.type = result_type
 
         self.description = None
@@ -39,7 +44,7 @@ class EpisodeResult(Result):
         self.episode_number = None
         self.duration_seconds = None
 
-        Result.__init__(self, "episode")
+        Result.__init__(self, Result.EPISODE)
 
 class MovieResult(Result):
     """A film search result."""
@@ -48,17 +53,19 @@ class MovieResult(Result):
         self.title = None
         self.duration_seconds = None
 
-        Result.__init__(self, "movie")
+        Result.__init__(self, Result.MOVIE)
 
 class SeriesResult(Result):
     """A TV series result."""
+
+    # TODO: collect Amazon and Hulu episode results into series results
 
     def __init__(self):
         self.title = None
         self.season_count = None
         self.episode_count = None
 
-        Result.__init__(self, "series")
+        Result.__init__(self, Result.SERIES)
 
 class Search(object):
     """Base class for search plugins."""
@@ -92,7 +99,8 @@ class HuluSearch(Search):
         Search.__init__(self)
 
     def find(self, query):
-        # we make two requests, one for movies and one for TV shows
+        # we make two requests, one for movies and one for TV shows. this is to
+        # filter out useless clips and previews and the like.
         tv_params = {
             "page": 1,
             "type": "episode",
@@ -153,12 +161,10 @@ class HuluSearch(Search):
 
         response = requests.get(self.autocomplete_url, params=params)
 
-        # if we got JSON data back, parse it
-        if response.json is not None:
-            # throw out query strings from result
-            json = filter(lambda s: not isinstance(s, basestring), response.json)
-            if len(json) > 0:
-                return [s.lower() for s in json[0]]
+        # throw out query strings from result
+        json = filter(lambda s: not isinstance(s, basestring), response.json)
+        if len(json) > 0:
+            return [s.lower() for s in json[0]]
 
         # default to returning no results
         return []
@@ -237,6 +243,10 @@ class AmazonSearch(Search):
             ResponseGroup="RelatedItems,ItemAttributes,Images",
             RelationshipType="Episode", # so we can get season name
 
+            # NOTE: we might be able to emulate season searching by adding
+            # 'season' as a search term and using the related results to get
+            # episode information.
+
             Keywords=query
         )
 
@@ -255,14 +265,13 @@ class AmazonSearch(Search):
             for item in soup.items("item", recursive=False):
                 attrs = item.itemattributes
 
-                # are we dealing with a TV episode or a movie?
+                # handle the different result types
                 if "movie" in attrs.productgroup.string.lower():
                     r = MovieResult()
+                    r.title = unicode(attrs.title.string)
                 else:
                     r = EpisodeResult()
 
-                # handle tv results vs. movie results
-                if isinstance(r, EpisodeResult):
                     # prefix the title with the season name if possible
                     if item.relateditems is not None:
                         rel_attrs = item.relateditems.find("itemattributes")
@@ -278,8 +287,6 @@ class AmazonSearch(Search):
 
                     r.episode_title = unicode(attrs.title.string)
                     r.episode_number = int(attrs.episodesequence.string)
-                else:
-                    r.title = unicode(attrs.title.string)
 
                 r.url = unicode(item.detailpageurl.string)
                 r.image_url = unicode(item.largeimage.url.string)
@@ -291,8 +298,7 @@ class AmazonSearch(Search):
                     r.duration_seconds = 60 * minutes
 
                 # NOTE: description and rating_fraction don't come back in the
-                # results, and would take too long to scrape. we leave them
-                # unset.
+                # results, and would take a long time to scrape, so we don't.
 
                 results.append(r)
 
@@ -384,7 +390,8 @@ class NetflixSearch(Search):
             "GET", self.search_url, self.consumer_key, self.shared_secret,
             v=2.0, # use the newest API version (JSON support, filters, etc.)
             output="json", # we want JSON responses, not XML
-            start_index=0,
+
+            # don't get too many results at once
             max_results=25,
 
             # we only want instant streaming results
@@ -396,12 +403,11 @@ class NetflixSearch(Search):
             term=query
         )
 
-        print "request url:", arequests.get(self.search_url, params=params).full_url
-
         response = requests.get(self.search_url, params=params)
 
         results = []
         for item in response.json["catalog"]:
+
             # figure out what kind of result we're dealing with
             if "movie" in item["id"]:
                 r = MovieResult()
@@ -426,11 +432,11 @@ class NetflixSearch(Search):
             r.image_url = image_url
 
             # NOTE: no duration information comes back, so we don't fill it out.
-            # also, episodes aren't directly returned as part of the search,
+            # this could be remedied with the bulk request API, if necessary.
+
+            # NOTE: episodes aren't directly returned as part of the search,
             # only (seemingly) as part of a series. since series are much more
             # useful than individual episodes, we leave it alone.
-
-            # TODO: collect Amazon and Hulu episode results into series results
 
             results.append(r)
 
@@ -447,8 +453,8 @@ class NetflixSearch(Search):
 
         results = []
         for item in soup("autocomplete_item"):
-            title = unicode(item.title["short"]).lower()
-            results.append(title)
+            title = unicode(item.title["short"])
+            results.append(title.lower())
 
         return results
 
