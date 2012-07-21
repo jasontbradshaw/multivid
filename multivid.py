@@ -3,8 +3,11 @@
 import base64
 import hashlib
 import hmac
-import urllib
+import oauth.oauth as oauth
+import random
+import string
 import time
+import urllib
 
 import bs4
 import requests
@@ -12,37 +15,50 @@ import requests
 import arequests
 
 class Result:
-    """A video search result."""
+    """A basic search result."""
 
-    def __init__(self):
+    def __init__(self, result_type):
+        self.type = result_type
+
         self.description = None
         self.rating_fraction = None
-        self.video_url = None
-        self.thumbnail_url = None
-        self.duration_seconds = None
+        self.url = None
+        self.image_url = None
 
     def to_dict(self):
         # return a copy of our own dict
         return dict(self.__dict__)
 
-class TvResult(Result):
+class EpisodeResult(Result):
     """A television search result."""
 
     def __init__(self):
-        self.show_title = None
+        self.series_title = None
         self.episode_title = None
         self.season_number = None
         self.episode_number = None
+        self.duration_seconds = None
 
-        Result.__init__(self)
+        Result.__init__(self, "episode")
 
 class MovieResult(Result):
     """A film search result."""
 
     def __init__(self):
         self.title = None
+        self.duration_seconds = None
 
-        Result.__init__(self)
+        Result.__init__(self, "movie")
+
+class SeriesResult(Result):
+    """A TV series result."""
+
+    def __init__(self):
+        self.title = None
+        self.season_count = None
+        self.episode_count = None
+
+        Result.__init__(self, "series")
 
 class Search(object):
     """Base class for search plugins."""
@@ -80,11 +96,13 @@ class HuluSearch(Search):
         tv_params = {
             "page": 1,
             "type": "episode",
+            "site": "hulu",
             "query": query
         }
         movie_params = {
             "page": 1,
             "type": "feature_film",
+            "site": "hulu",
             "query": query
         }
 
@@ -100,16 +118,16 @@ class HuluSearch(Search):
 
         results = []
         for video in tv_soup.videos("video", recursive=False):
-            r = TvResult()
+            r = EpisodeResult()
 
-            r.show_title = unicode(video.show.find("name").string)
+            r.series_title = unicode(video.show.find("name").string)
             r.episode_title = unicode(video.title.string)
             r.season_number = int(video.find("season-number").string)
             r.episode_number = int(video.find("episode-number").string)
             r.description = unicode(video.description.string)
             r.rating_fraction = float(video.rating.string) / self.rating_max
-            r.video_url = u"http://www.hulu.com/watch/" + video.id.string
-            r.thumbnail_url = unicode(video.find("thumbnail-url").string)
+            r.url = u"http://www.hulu.com/watch/" + video.id.string
+            r.image_url = unicode(video.find("thumbnail-url").string)
             r.duration_seconds = int(float(video.duration.string))
 
             results.append(r)
@@ -120,8 +138,8 @@ class HuluSearch(Search):
             r.title = unicode(video.title.string)
             r.description = unicode(video.description.string)
             r.rating_fraction = float(video.rating.string) / self.rating_max
-            r.video_url = u"http://www.hulu.com/watch/" + video.id.string
-            r.thumbnail_url = unicode(video.find("thumbnail-url").string)
+            r.url = u"http://www.hulu.com/watch/" + video.id.string
+            r.image_url = unicode(video.find("thumbnail-url").string)
             r.duration_seconds = int(float(video.duration.string))
 
             results.append(r)
@@ -179,10 +197,10 @@ class AmazonSearch(Search):
 
         # quote and store all the keys and values of the sorted params
         query_string_builder = []
-        for param in sorted(params.keys()):
+        for param, value in sorted(params.items()):
             query_string_builder.append(param)
             query_string_builder.append("=")
-            query_string_builder.append(urllib.quote(str(params[param]), "~"))
+            query_string_builder.append(urllib.quote(str(value), "~"))
             query_string_builder.append("&")
         query_string_builder.pop()
 
@@ -238,22 +256,22 @@ class AmazonSearch(Search):
                 attrs = item.itemattributes
 
                 # are we dealing with a TV episode or a movie?
-                if attrs.productgroup.string.lower().count("movie") > 0:
+                if "movie" in attrs.productgroup.string.lower():
                     r = MovieResult()
                 else:
-                    r = TvResult()
+                    r = EpisodeResult()
 
                 # handle tv results vs. movie results
-                if isinstance(r, TvResult):
+                if isinstance(r, EpisodeResult):
                     # prefix the title with the season name if possible
                     if item.relateditems is not None:
                         rel_attrs = item.relateditems.find("itemattributes")
                         if rel_attrs is not None:
                             # make sure it's a TV season
                             prod_group = rel_attrs.productgroup.string
-                            if prod_group.lower().count("season") > 0:
+                            if "season" in prod_group.lower():
                                 # get the show title
-                                r.show_title = unicode(rel_attrs.title.string)
+                                r.series_title = unicode(rel_attrs.title.string)
 
                                 # get the season number
                                 r.season_number = int(rel_attrs.episodesequence.string)
@@ -263,8 +281,8 @@ class AmazonSearch(Search):
                 else:
                     r.title = unicode(attrs.title.string)
 
-                r.video_url = unicode(item.detailpageurl.string)
-                r.thumbnail_url = unicode(item.largeimage.url.string)
+                r.url = unicode(item.detailpageurl.string)
+                r.image_url = unicode(item.largeimage.url.string)
 
                 # occasionally, there isn't a running time
                 mins = attrs.find("runningtime", units="minutes")
@@ -305,13 +323,118 @@ class NetflixSearch(Search):
         self.search_url = base_url + "/catalog/titles"
         self.autocomplete_url = base_url + "/catalog/titles/autocomplete"
 
+        # the maximum number of starts a title may be rated
+        self.rating_max = 5
+
+        # our private netflix keys
         self.consumer_key = ""
         self.shared_secret = ""
 
         Search.__init__(self)
 
+    @staticmethod
+    def build_params(http_method, url, consumer_key, shared_secret, **params):
+        """
+        OAuth-encodes and signs the given parameters for some request, adding
+        the nonce, timestamp, and other required parameters along the way.
+        """
+        # make sure the verb is supported
+        assert http_method.lower() in {"get", "post", "put", "delete"}
+
+        base_str_builder = []
+        base_str_builder.append(http_method.upper())
+        base_str_builder.append(urllib.quote(url, "~"))
+
+        # add required params
+        params["oauth_version"] = "1.0"
+        params["oauth_consumer_key"] = consumer_key
+        params["oauth_signature_method"] = "HMAC-SHA1"
+
+        # generate a nonce and the timestamp
+        abc = string.letters
+        params["oauth_nonce"] = ''.join(random.choice(abc) for i in xrange(32))
+        params["oauth_timestamp"] = str(int(time.time()))
+
+        # build the parameter string (alphabetical)
+        param_str_builder = []
+        for param, value in sorted(params.items()):
+            param_str_builder.append(param)
+            param_str_builder.append("=")
+            # must double-escape param values, once here and again later
+            param_str_builder.append(urllib.quote(str(value), "~"))
+            param_str_builder.append("&")
+        param_str_builder.pop()
+
+        # escape it separately and add it to the base string
+        param_str = urllib.quote(''.join(param_str_builder), "~")
+        base_str_builder.append(param_str)
+
+        # the string we sign has unescaped ampersands separating its parts
+        str_to_sign = "&".join(base_str_builder)
+
+        # sign the string
+        signer = hmac.new(shared_secret + "&", str_to_sign, hashlib.sha1)
+
+        # add the signature to the original params and return them
+        params["oauth_signature"] = base64.b64encode(signer.digest())
+        return params
+
     def find(self, query):
-        pass
+        params = NetflixSearch.build_params(
+            "GET", self.search_url, self.consumer_key, self.shared_secret,
+            v=2.0, # use the newest API version (JSON support, filters, etc.)
+            output="json", # we want JSON responses, not XML
+            start_index=0,
+            max_results=25,
+
+            # we only want instant streaming results
+            filters="http://api.netflix.com/categories/title_formats/instant",
+
+            # get all the data we care about as part of the single request
+            expand="@title,@seasons,@episodes,@short_synopsis",
+
+            term=query
+        )
+
+        print "request url:", arequests.get(self.search_url, params=params).full_url
+
+        response = requests.get(self.search_url, params=params)
+
+        results = []
+        for item in response.json["catalog"]:
+            # figure out what kind of result we're dealing with
+            if "movie" in item["id"]:
+                r = MovieResult()
+            elif "series" in item["id"]:
+                r = SeriesResult()
+                r.episode_count = item["episode_count"]
+                r.season_count = item["season_count"]
+
+            r.title = item["title"]["regular"]
+            r.description = item["synopsis"]["short_synopsis"]
+            r.rating_fraction = self.rating_max / float(item["average_rating"])
+            r.url = item["web_page"]
+
+            # pick the largest image size available
+            largest_size = 0
+            image_url = None
+            for size_str, url in item["box_art"].items():
+                size_num = int(size_str.replace("pix_w", ""))
+                if size_num >= largest_size:
+                    largest_size = size_num
+                    image_url = url
+            r.image_url = image_url
+
+            # NOTE: no duration information comes back, so we don't fill it out.
+            # also, episodes aren't directly returned as part of the search,
+            # only (seemingly) as part of a series. since series are much more
+            # useful than individual episodes, we leave it alone.
+
+            # TODO: collect Amazon and Hulu episode results into series results
+
+            results.append(r)
+
+        return results
 
     def autocomplete(self, query):
         params = {
@@ -334,17 +457,17 @@ if __name__ == "__main__":
 
     to_dict = lambda r: r.to_dict()
 
-    #print "Hulu:"
-    #h = HuluSearch()
-    #pp(h.autocomplete("c"))
-    #pp(map(to_dict, h.find("c")))
-    #print
+    print "Hulu:"
+    h = HuluSearch()
+    pp(h.autocomplete("c"))
+    pp(map(to_dict, h.find("c")))
+    print
 
-    #print "Amazon:"
-    #a = AmazonSearch()
-    #pp(a.autocomplete("c"))
-    #pp(map(to_dict, a.find("c")))
-    #print
+    print "Amazon:"
+    a = AmazonSearch()
+    pp(a.autocomplete("c"))
+    pp(map(to_dict, a.find("c")))
+    print
 
     print "Netflix:"
     n = NetflixSearch()
