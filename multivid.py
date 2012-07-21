@@ -15,20 +15,34 @@ class Result:
     """A video search result."""
 
     def __init__(self):
-        self.title = None
         self.description = None
         self.rating_fraction = None
         self.video_url = None
         self.thumbnail_url = None
+        self.duration_seconds = None
 
     def to_dict(self):
-        return {
-            "title": self.title,
-            "description": self.description,
-            "rating_fraction": self.rating_fraction,
-            "video_url": self.video_url,
-            "thumbnail_url": self.thumbnail_url
-        }
+        # return a copy of our own dict
+        return dict(self.__dict__)
+
+class TvResult(Result):
+    """A television search result."""
+
+    def __init__(self):
+        self.show_title = None
+        self.episode_title = None
+        self.season_number = None
+        self.episode_number = None
+
+        Result.__init__(self)
+
+class MovieResult(Result):
+    """A film search result."""
+
+    def __init__(self):
+        self.title = None
+
+        Result.__init__(self)
 
 class Search(object):
     """
@@ -99,29 +113,29 @@ class HuluSearch(Search):
 
         results = []
         for video in tv_soup.videos("video", recursive=False):
-            r = Result()
+            r = TvResult()
 
-            # title it show title: episode title for tv shows
-            r.title = unicode(video.show.find("name").string)
-            r.title += ": " + unicode(video.title.string)
-
+            r.show_title = unicode(video.show.find("name").string)
+            r.episode_title = unicode(video.title.string)
+            r.season_number = int(video.find("season-number").string)
+            r.episode_number = int(video.find("episode-number").string)
             r.description = unicode(video.description.string)
             r.rating_fraction = float(video.rating.string) / self.rating_max
             r.video_url = u"http://www.hulu.com/watch/" + video.id.string
             r.thumbnail_url = unicode(video.find("thumbnail-url").string)
+            r.duration_seconds = int(float(video.duration.string))
 
             results.append(r)
 
         for video in movie_soup.videos("video", recursive=False):
-            r = Result()
+            r = MovieResult()
 
-            # movie names are just the title
             r.title = unicode(video.title.string)
-
             r.description = unicode(video.description.string)
             r.rating_fraction = float(video.rating.string) / self.rating_max
             r.video_url = u"http://www.hulu.com/watch/" + video.id.string
             r.thumbnail_url = unicode(video.find("thumbnail-url").string)
+            r.duration_seconds = int(float(video.duration.string))
 
             results.append(r)
 
@@ -234,25 +248,42 @@ class AmazonSearch(Search):
 
             # iterate over all the item nodes
             for item in soup.items("item", recursive=False):
-                r = Result()
+                attrs = item.itemattributes
 
-                title = u""
+                # are we dealing with a TV episode or a movie?
+                if attrs.productgroup.string.lower().count("movie") > 0:
+                    r = MovieResult()
+                else:
+                    r = TvResult()
 
-                # prefix the title with the season name if possible
-                if item.relateditems is not None:
-                    attrs = item.relateditems("itemattributes")
-                    if len(attrs) > 0:
-                        prod_group = attrs[0].productgroup.string
-                        if prod_group.lower().count("season") > 0:
-                            title += attrs[0].title.string
-                            title += ": "
+                # handle tv results vs. movie results
+                if isinstance(r, TvResult):
+                    # prefix the title with the season name if possible
+                    if item.relateditems is not None:
+                        rel_attrs = item.relateditems.find("itemattributes")
+                        if rel_attrs is not None:
+                            # make sure it's a TV season
+                            prod_group = rel_attrs.productgroup.string
+                            if prod_group.lower().count("season") > 0:
+                                # get the show title
+                                r.show_title = unicode(rel_attrs.title.string)
 
-                # add the item's direct title
-                title += item.itemattributes.title.string
-                r.title = title
+                                # get the season number
+                                r.season_number = int(rel_attrs.episodesequence.string)
+
+                    r.episode_title = unicode(attrs.title.string)
+                    r.episode_number = int(attrs.episodesequence.string)
+                else:
+                    r.title = unicode(attrs.title.string)
 
                 r.video_url = unicode(item.detailpageurl.string)
                 r.thumbnail_url = unicode(item.largeimage.url.string)
+
+                # occasionally, there isn't a running time
+                mins = attrs.find("runningtime", units="minutes")
+                if mins is not None:
+                    minutes = int(mins.string)
+                    r.duration_seconds = 60 * minutes
 
                 # NOTE: description and rating_fraction don't come back in the
                 # results, and would take too long to scrape. we leave them
