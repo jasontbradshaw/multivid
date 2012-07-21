@@ -45,17 +45,7 @@ class MovieResult(Result):
         Result.__init__(self)
 
 class Search(object):
-    """
-    Base class for search plugins. Implementing classes should call the init
-    method to enable support for the supports_autocomplete property.
-    """
-
-    def __init__(self, supports_autocomplete=True):
-        self.__supports_autocomplete = supports_autocomplete
-
-    @property
-    def supports_autocomplete(self):
-        return self.__supports_autocomplete
+    """Base class for search plugins."""
 
     def find(self, query):
         """
@@ -72,10 +62,7 @@ class Search(object):
         autocomplete is not supported, this should return an empty list.
         """
 
-        # only requires implementation if autocomplete is supported
-        if self.supports_autocomplete:
-            raise NotImplemented("autocomplete must be implemented!")
-        return []
+        raise NotImplemented("autocomplete must be implemented!")
 
 class HuluSearch(Search):
     def __init__(self):
@@ -86,7 +73,7 @@ class HuluSearch(Search):
         # the maximum rating a video may receive
         self.rating_max = 5
 
-        Search.__init__(self, supports_autocomplete=True)
+        Search.__init__(self)
 
     def find(self, query):
         # we make two requests, one for movies and one for TV shows
@@ -174,7 +161,7 @@ class AmazonSearch(Search):
         # the number of pages of results to retrieve from the API
         self.pages_to_get = 2
 
-        Search.__init__(self, supports_autocomplete=True)
+        Search.__init__(self)
 
     @staticmethod
     def build_params(http_method, access_key_id, secret_access_key, **params):
@@ -312,19 +299,55 @@ class AmazonSearch(Search):
         # default to returning no results
         return []
 
+class NetflixSearch(Search):
+    def __init__(self):
+        base_url = "http://api-public.netflix.com"
+        self.search_url = base_url + "/catalog/titles"
+        self.autocomplete_url = base_url + "/catalog/titles/autocomplete"
+
+        self.consumer_key = ""
+        self.shared_secret = ""
+
+        Search.__init__(self)
+
+    def find(self, query):
+        pass
+
+    def autocomplete(self, query):
+        params = {
+            "oauth_consumer_key": self.consumer_key,
+            "term": query
+        }
+
+        response = requests.get(self.autocomplete_url, params=params)
+        soup = bs4.BeautifulSoup(response.text)
+
+        results = []
+        for item in soup("autocomplete_item"):
+            title = unicode(item.title["short"]).lower()
+            results.append(title)
+
+        return results
+
 if __name__ == "__main__":
     from pprint import pprint as pp
 
     to_dict = lambda r: r.to_dict()
 
-    print "Hulu:"
-    h = HuluSearch()
-    pp(h.autocomplete("c"))
-    pp(map(to_dict, h.find("c")))
-    print
+    #print "Hulu:"
+    #h = HuluSearch()
+    #pp(h.autocomplete("c"))
+    #pp(map(to_dict, h.find("c")))
+    #print
 
-    print "Amazon:"
-    a = AmazonSearch()
-    pp(a.autocomplete("c"))
-    pp(map(to_dict, a.find("c")))
+    #print "Amazon:"
+    #a = AmazonSearch()
+    #pp(a.autocomplete("c"))
+    #pp(map(to_dict, a.find("c")))
+    #print
+
+    print "Netflix:"
+    n = NetflixSearch()
+    pp(n.autocomplete("c"))
+    pp(map(to_dict, n.find("c")))
     print
