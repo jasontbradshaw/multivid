@@ -47,7 +47,7 @@ class MovieResult(Result):
 class SeriesResult(Result):
     """A TV series result."""
 
-    # TODO: collect Amazon and Hulu episode results into series results
+    # TODO: generate Amazon series results as well as episode results
 
     def __init__(self, originator):
         self.title = None

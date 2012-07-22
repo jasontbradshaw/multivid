@@ -123,7 +123,10 @@ class HuluSearch(Search):
         tv_soup = bs4.BeautifulSoup(tv_response.text)
         movie_soup = bs4.BeautifulSoup(movie_response.text)
 
+        # the canonical results dict, as well as the series results
         results = []
+        result_series = {}
+
         for video in tv_soup.videos("video", recursive=False):
             r = containers.EpisodeResult(self.name)
 
@@ -139,6 +142,33 @@ class HuluSearch(Search):
 
             results.append(r)
 
+            # add shows as well as episodes, but only if unique
+            canonical_name = unicode(video.show.find("canonical-name").string)
+            if canonical_name not in result_series:
+                sr = containers.SeriesResult(self.name)
+
+                sr.description = unicode(video.show.description.string)
+
+                # user rating for the show (no 'rating' element, apparently)
+                user_rating = float(video.show.find("user-star-rating").string)
+                sr.rating_fraction = user_rating / self.rating_max
+
+                # link to the show page
+                sr.url = u"http://www.hulu.com/" + canonical_name
+
+                # the banner image for the show on the show page
+                sr.image_url = u"http://ib.huluim.com/show_art/"
+                sr.image_url += unicode(video.show.find("id").string)
+                sr.image_url += u"?size=900x350&maintain_ratio=1"
+
+                sr.title = unicode(video.show.find("name").string)
+                sr.season_count = int(video.show.find("seasons-count").string)
+                sr.episode_count = int(video.show.find("episodes-count").string)
+                sr.description = unicode(video.description.string)
+
+                # add the series to the series result map
+                result_series[canonical_name] = sr
+
         for video in movie_soup.videos("video", recursive=False):
             r = containers.MovieResult(self.name)
 
@@ -151,7 +181,8 @@ class HuluSearch(Search):
 
             results.append(r)
 
-        return results
+        # return series results, followed by all other results
+        return result_series.values() + results
 
     def autocomplete(self, query):
         params = {
