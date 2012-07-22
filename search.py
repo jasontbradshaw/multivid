@@ -189,13 +189,8 @@ class HuluSearch(Search):
 
         response = requests.get(self.autocomplete_url, params=params)
 
-        # throw out query strings from result
-        json = filter(lambda s: not isinstance(s, basestring), response.json)
-        if len(json) > 0:
-            return [s.lower() for s in json[0]]
-
-        # default to returning no results
-        return []
+        # the second item of the response list is the list of results
+        return [s.lower() for s in response.json[1]]
 
 class AmazonSearch(Search):
     def __init__(self, config_file="multivid.conf"):
@@ -343,13 +338,8 @@ class AmazonSearch(Search):
 
         response = requests.get(self.autocomplete_url, params=params)
 
-        # if we got JSON data back, parse it
-        if response.json is not None and len(response.json) > 1:
-            # skip the query itself and return the suggestion list
-            return [s.lower() for s in response.json[1]]
-
-        # default to returning no results
-        return []
+        # skip the query itself and return the suggestion list
+        return [s.lower() for s in response.json[1]]
 
 class NetflixSearch(Search):
     def __init__(self, config_file="multivid.conf"):
@@ -480,6 +470,7 @@ class NetflixSearch(Search):
 
         response = requests.get(self.autocomplete_url, params=params)
 
-        if response.json is not None:
+        # if there are no results, the 'title' field doesn't exist
+        if "title" in response.json["autocomplete"]:
             return [r.lower() for r in response.json["autocomplete"]["title"]]
         return []
