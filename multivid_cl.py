@@ -16,8 +16,13 @@ if __name__ == "__main__":
     # get the query from the first argument or from user input
     if len(sys.argv) > 1:
         query = sys.argv[1]
+        if query.strip() == "":
+            raise ValueError("Non-blank query string is required!")
     else:
-        query = raw_input("search: ")
+        query = ""
+        # get a non-blank query string
+        while query.strip() == "":
+            query = raw_input("search: ")
 
     # get a shorter query to use for autocomplete
     ac_query = query[0:3]
