@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import search
-import thread_pool
+import tmap
 
 if __name__ == "__main__":
     from pprint import pprint as pp
@@ -19,13 +19,11 @@ if __name__ == "__main__":
     else:
         query = raw_input("search: ")
 
-    # perform searches in parallel
-    pool = thread_pool.Pool(3)
-
     # get a shorter query to use for autocomplete
     ac_query = query[0:3]
 
-    ac_results = pool.map(lambda s: s.autocomplete(ac_query), (a, h, n))
+    ac_results = tmap.map(lambda s: s.autocomplete(ac_query), (a, h, n),
+            num_threads=3)
     autocomplete_results = {
         "amazon": ac_results[0],
         "hulu": ac_results[1],
@@ -36,7 +34,7 @@ if __name__ == "__main__":
     pp(autocomplete_results)
     print
 
-    results = pool.map(lambda s: s.find(query), (a, h, n))
+    results = tmap.map(lambda s: s.find(query), (a, h, n), num_threads=3)
     search_results = {
         "amazon": map(to_dict, results[0]),
         "hulu": map(to_dict, results[1]),

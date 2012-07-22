@@ -12,7 +12,6 @@ import requests
 
 import arequests
 import common
-import thread_pool
 
 class HuluSearch(common.Search):
     def __init__(self):

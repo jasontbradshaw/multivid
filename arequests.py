@@ -8,7 +8,7 @@ instance (as opposed to ``Response``). A list of requests can be sent with
 ``map()``.
 """
 
-import thread_pool
+import tmap
 
 from requests import api
 
@@ -57,6 +57,6 @@ def map(requests, prefetch=True, size=None):
     :param size: Specifies the number of requests to make at a time. If None, no throttling occurs.
     """
 
-    # create pool of specified size or default to one thread per request
-    pool = thread_pool.Pool(size if size is not None else len(requests))
-    return pool.map(lambda r: send(r, prefetch), requests)
+    # send the requests in paralell and return the results
+    nt = size if size is not None else len(requests)
+    return tmap.map(lambda r: send(r, prefetch), requests, num_threads=nt)
