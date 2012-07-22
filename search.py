@@ -477,15 +477,13 @@ class NetflixSearch(Search):
     def autocomplete(self, query):
         params = {
             "oauth_consumer_key": self.config["netflix"]["public_key"],
+            "v": 2.0,
+            "output": "json",
             "term": query
         }
 
         response = requests.get(self.autocomplete_url, params=params)
-        soup = bs4.BeautifulSoup(response.text)
 
-        results = []
-        for item in soup("autocomplete_item"):
-            title = unicode(item.title["short"])
-            results.append(title.lower())
-
-        return results
+        if response.json is not None:
+            return [r.lower() for r in response.json["autocomplete"]["title"]]
+        return []
