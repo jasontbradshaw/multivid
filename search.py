@@ -123,28 +123,14 @@ class HuluSearch(Search):
         tv_soup = bs4.BeautifulSoup(tv_response.text)
         movie_soup = bs4.BeautifulSoup(movie_response.text)
 
-        # the canonical results dict, as well as the series results
+        # the canonical results list
         results = []
-        result_series = {}
 
+        series_name_set = set()
         for video in tv_soup.videos("video", recursive=False):
-            r = containers.EpisodeResult(self.name)
-
-            r.series_title = unicode(video.show.find("name").string)
-            r.episode_title = unicode(video.title.string)
-            r.season_number = int(video.find("season-number").string)
-            r.episode_number = int(video.find("episode-number").string)
-            r.description = unicode(video.description.string)
-            r.rating_fraction = float(video.rating.string) / self.rating_max
-            r.url = u"http://www.hulu.com/watch/" + video.id.string
-            r.image_url = unicode(video.find("thumbnail-url").string)
-            r.duration_seconds = int(float(video.duration.string))
-
-            results.append(r)
-
-            # add shows as well as episodes, but only if unique
+            # add series as well as episodes, but only if unique
             canonical_name = unicode(video.show.find("canonical-name").string)
-            if canonical_name not in result_series:
+            if canonical_name not in series_name_set:
                 sr = containers.SeriesResult(self.name)
 
                 sr.description = unicode(video.show.description.string)
@@ -166,8 +152,26 @@ class HuluSearch(Search):
                 sr.episode_count = int(video.show.find("episodes-count").string)
                 sr.description = unicode(video.description.string)
 
-                # add the series to the series result map
-                result_series[canonical_name] = sr
+                # add the series to the results
+                results.append(sr)
+
+                # add its name to the set so we don't add it to results again
+                series_name_set.add(canonical_name)
+
+            # add the episode itself
+            r = containers.EpisodeResult(self.name)
+
+            r.series_title = unicode(video.show.find("name").string)
+            r.episode_title = unicode(video.title.string)
+            r.season_number = int(video.find("season-number").string)
+            r.episode_number = int(video.find("episode-number").string)
+            r.description = unicode(video.description.string)
+            r.rating_fraction = float(video.rating.string) / self.rating_max
+            r.url = u"http://www.hulu.com/watch/" + video.id.string
+            r.image_url = unicode(video.find("thumbnail-url").string)
+            r.duration_seconds = int(float(video.duration.string))
+
+            results.append(r)
 
         for video in movie_soup.videos("video", recursive=False):
             r = containers.MovieResult(self.name)
@@ -181,8 +185,7 @@ class HuluSearch(Search):
 
             results.append(r)
 
-        # return series results, followed by all other results
-        return result_series.values() + results
+        return results
 
     def autocomplete(self, query):
         params = {
