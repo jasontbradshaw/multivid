@@ -23,6 +23,7 @@ def autocomplete():
     query = bottle.request.query["query"]
     qf = lambda s: s.autocomplete(query)
 
+
     # get the results in parallel
     results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
 
@@ -39,13 +40,13 @@ def find():
     query = bottle.request.query["query"]
     qf = lambda s: s.find(query)
 
-    # return the results as one long list
-    results = []
-    for result in tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS)):
-        for r in result:
-            results.append(r.to_dict())
+    results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
 
-    return {"results": results}
+    result_dict = {}
+    for searcher, result in itertools.izip(SEARCHERS, results):
+        result_dict[searcher.name] = [r.to_dict() for r in result]
+
+    return result_dict
 
 bottle.debug(True)
 bottle.run(host="localhost", port=8000, reloader=True)
