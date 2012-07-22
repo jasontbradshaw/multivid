@@ -3,9 +3,9 @@ import json
 class Result:
     """A basic search result."""
 
-    MOVIE = "movie"
-    EPISODE = "episode"
-    SERIES = "series"
+    MOVIE = u"movie"
+    EPISODE = u"episode"
+    SERIES = u"series"
 
     def __init__(self, result_type):
         assert result_type in {Result.MOVIE, Result.EPISODE, Result.SERIES}
