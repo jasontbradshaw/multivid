@@ -26,12 +26,12 @@ class Search(object):
         # where the loaded config file is cached once read
         self.__config = None
 
+        # default to the name of the class with 'Search' removed
+        if name is None:
+            name = self.__class__.__name__.replace("Search", "")
+
         # the simple name of this search plugin, in lowercase
-        if name is not None:
-            self.__name = name.lower()
-        else:
-            # default to the name of the class with 'Search' removed
-            self.__name = self.__class__.__name__.lower().replace("search", "")
+        self.__name = unicode(name.lower())
 
     def find(self, query):
         """
@@ -125,7 +125,7 @@ class HuluSearch(Search):
 
         results = []
         for video in tv_soup.videos("video", recursive=False):
-            r = containers.EpisodeResult()
+            r = containers.EpisodeResult(self.name)
 
             r.series_title = unicode(video.show.find("name").string)
             r.episode_title = unicode(video.title.string)
@@ -140,7 +140,7 @@ class HuluSearch(Search):
             results.append(r)
 
         for video in movie_soup.videos("video", recursive=False):
-            r = containers.MovieResult()
+            r = containers.MovieResult(self.name)
 
             r.title = unicode(video.title.string)
             r.description = unicode(video.description.string)
@@ -266,10 +266,10 @@ class AmazonSearch(Search):
 
                 # handle the different result types
                 if "movie" in attrs.productgroup.string.lower():
-                    r = containers.MovieResult()
+                    r = containers.MovieResult(self.name)
                     r.title = unicode(attrs.title.string)
                 else:
-                    r = containers.EpisodeResult()
+                    r = containers.EpisodeResult(self.name)
 
                     # prefix the title with the season name if possible
                     if item.relateditems is not None:
@@ -409,9 +409,9 @@ class NetflixSearch(Search):
 
             # figure out what kind of result we're dealing with
             if "movie" in item["id"]:
-                r = containers.MovieResult()
+                r = containers.MovieResult(self.name)
             elif "series" in item["id"]:
-                r = containers.SeriesResult()
+                r = containers.SeriesResult(self.name)
                 r.episode_count = item["episode_count"]
                 r.season_count = item["season_count"]
 
