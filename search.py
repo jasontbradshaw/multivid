@@ -2,6 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
+import os
 import random
 import string
 import time
@@ -11,9 +12,81 @@ import bs4
 import requests
 
 import arequests
-import common
+import containers
 
-class HuluSearch(common.Search):
+class Search(object):
+    """Base class for search plugins."""
+
+    def __init__(self, name=None, config_file="multivid.conf"):
+        # set the config file if one is needed/was specified
+        self.config_file = None
+        if config_file is not None:
+            self.config_file = os.path.abspath(config_file)
+
+        # where the loaded config file is cached once read
+        self.__config = None
+
+        # the simple name of this search plugin, in lowercase
+        if name is not None:
+            self.__name = name.lower()
+        else:
+            # default to the name of the class with 'Search' removed
+            self.__name = self.__class__.__name__.lower().replace("search", "")
+
+    def find(self, query):
+        """
+        Synchonously run a search for some query and return the list of results.
+        If no results are found, should return an empty list.
+        """
+
+        raise NotImplemented("find must be implemented!")
+
+    def autocomplete(self, query):
+        """
+        Get the list of lowercase strings suggested by the autocomplete search
+        for some query, partial or otherwise. If no suggestions are found, or
+        autocomplete is not supported, this should return an empty list.
+        """
+
+        raise NotImplemented("autocomplete must be implemented!")
+
+    @property
+    def config(self):
+        """Return the JSON config file contents."""
+
+        # return the cached value if it exists
+        if self.__config is not None:
+            return self.__config
+
+        # only load the file if one was specified and the file exists
+        config = None
+        if self.config_file is not None:
+            # raise an error if there's no such config file
+            if not os.path.exists(self.config_file):
+                raise ValueError("config file could not be located: " +
+                        self.config_file)
+
+            # load and parse the config file if it does exist
+            with open(self.config_file, 'r') as cf:
+                try:
+                    config = json.load(cf)
+                except ValueError:
+                    # return None if the config failed to parse
+                    config = None
+        else:
+            # if there was no config specified, return an empty config
+            config = {}
+
+        # cache the loaded config file before returning it
+        self.__config = config
+
+        return config
+
+    @property
+    def name(self):
+        return self.__name
+
+class HuluSearch(Search):
     def __init__(self):
         # URLs we request data from
         self.search_url = "http://m.hulu.com/search"
@@ -22,7 +95,7 @@ class HuluSearch(common.Search):
         # the maximum rating a video may receive
         self.rating_max = 5.0
 
-        common.Search.__init__(self, config_file=None)
+        Search.__init__(self, config_file=None)
 
     def find(self, query):
         # we make two requests, one for movies and one for TV shows. this is to
@@ -52,7 +125,7 @@ class HuluSearch(common.Search):
 
         results = []
         for video in tv_soup.videos("video", recursive=False):
-            r = common.EpisodeResult()
+            r = containers.EpisodeResult()
 
             r.series_title = unicode(video.show.find("name").string)
             r.episode_title = unicode(video.title.string)
@@ -67,7 +140,7 @@ class HuluSearch(common.Search):
             results.append(r)
 
         for video in movie_soup.videos("video", recursive=False):
-            r = common.MovieResult()
+            r = containers.MovieResult()
 
             r.title = unicode(video.title.string)
             r.description = unicode(video.description.string)
@@ -95,7 +168,7 @@ class HuluSearch(common.Search):
         # default to returning no results
         return []
 
-class AmazonSearch(common.Search):
+class AmazonSearch(Search):
     def __init__(self, config_file="multivid.conf"):
         # URLs we request data from
         self.search_url = "http://webservices.amazon.com/onca/xml"
@@ -107,7 +180,7 @@ class AmazonSearch(common.Search):
         # the number of pages of results to retrieve from the API
         self.pages_to_get = 2
 
-        common.Search.__init__(self, config_file)
+        Search.__init__(self, config_file=config_file)
 
     @staticmethod
     def build_params(http_method, public_key, private_key, **params):
@@ -193,10 +266,10 @@ class AmazonSearch(common.Search):
 
                 # handle the different result types
                 if "movie" in attrs.productgroup.string.lower():
-                    r = common.MovieResult()
+                    r = containers.MovieResult()
                     r.title = unicode(attrs.title.string)
                 else:
-                    r = common.EpisodeResult()
+                    r = containers.EpisodeResult()
 
                     # prefix the title with the season name if possible
                     if item.relateditems is not None:
@@ -249,7 +322,7 @@ class AmazonSearch(common.Search):
         # default to returning no results
         return []
 
-class NetflixSearch(common.Search):
+class NetflixSearch(Search):
     def __init__(self, config_file="multivid.conf"):
         base_url = "http://api-public.netflix.com"
         self.search_url = base_url + "/catalog/titles"
@@ -258,7 +331,7 @@ class NetflixSearch(common.Search):
         # the maximum number of starts a title may be rated
         self.rating_max = 5.0
 
-        common.Search.__init__(self, config_file)
+        Search.__init__(self, config_file=config_file)
 
     @staticmethod
     def build_params(http_method, url, public_key, private_key, **params):
@@ -336,9 +409,9 @@ class NetflixSearch(common.Search):
 
             # figure out what kind of result we're dealing with
             if "movie" in item["id"]:
-                r = common.MovieResult()
+                r = containers.MovieResult()
             elif "series" in item["id"]:
-                r = common.SeriesResult()
+                r = containers.SeriesResult()
                 r.episode_count = item["episode_count"]
                 r.season_count = item["season_count"]
 
