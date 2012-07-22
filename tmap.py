@@ -12,16 +12,18 @@ def worker(function, work_queue, result_queue):
     full at the time the worker thread is started.
     """
 
-    try:
-        index, item = work_queue.get_nowait()
-        result_queue.put_nowait((index, function(item)))
-        work_queue.task_done()
-    except queue.Empty:
-        # stop working when all the work has been processed
-        return
-    except queue.Full:
-        # we should NEVER manage to do more work than was expected
-        assert False
+    # keep getting work until there's no more to be had
+    while 1:
+        try:
+            index, item = work_queue.get_nowait()
+            result_queue.put_nowait((index, function(item)))
+            work_queue.task_done()
+        except queue.Empty:
+            # stop working when all the work has been processed
+            return
+        except queue.Full:
+            # we should NEVER manage to do more work than was expected
+            assert False
 
 def map(function, sequence, num_threads=2):
     """
