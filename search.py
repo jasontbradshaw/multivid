@@ -150,7 +150,6 @@ class HuluSearch(Search):
                 sr.title = unicode(video.show.find("name").string)
                 sr.season_count = int(video.show.find("seasons-count").string)
                 sr.episode_count = int(video.show.find("episodes-count").string)
-                sr.description = unicode(video.description.string)
 
                 # add the series to the results
                 results.append(sr)
