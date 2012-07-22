@@ -31,7 +31,7 @@ class Search(object):
             name = self.__class__.__name__.replace("Search", "")
 
         # the simple name of this search plugin, in lowercase
-        self.__name = unicode(name.lower())
+        self.name = unicode(name.lower())
 
     def find(self, query):
         """
@@ -81,10 +81,6 @@ class Search(object):
         self.__config = config
 
         return config
-
-    @property
-    def name(self):
-        return self.__name
 
 class HuluSearch(Search):
     def __init__(self):
