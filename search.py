@@ -430,7 +430,7 @@ class NetflixSearch(Search):
             filters="http://api.netflix.com/categories/title_formats/instant",
 
             # get all the data we care about as part of the single request
-            expand="@title,@seasons,@episodes,@short_synopsis",
+            expand="@title,@seasons,@episodes,@synopsis",
 
             term=query
         )
@@ -449,7 +449,7 @@ class NetflixSearch(Search):
                 r.season_count = item["season_count"]
 
             r.title = item["title"]["regular"]
-            r.description = item["synopsis"]["short_synopsis"]
+            r.description = item["synopsis"]["regular"]
             r.rating_fraction = item["average_rating"] / self.rating_max
             r.url = item["web_page"]
 
