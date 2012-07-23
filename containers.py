@@ -7,12 +7,12 @@ class Result:
     EPISODE = u"episode"
     SERIES = u"series"
 
-    def __init__(self, result_type, originator=None):
+    def __init__(self, result_type, provider=None):
         assert result_type in {Result.MOVIE, Result.EPISODE, Result.SERIES}
         self.type = result_type
 
         # who the search result came from
-        self.originator = originator
+        self.provider = provider
 
         self.description = None
         self.rating_fraction = None
@@ -26,32 +26,32 @@ class Result:
 class EpisodeResult(Result):
     """A television search result."""
 
-    def __init__(self, originator):
+    def __init__(self, provider):
         self.series_title = None
         self.episode_title = None
         self.season_number = None
         self.episode_number = None
         self.duration_seconds = None
 
-        Result.__init__(self, Result.EPISODE, originator=originator)
+        Result.__init__(self, Result.EPISODE, provider=provider)
 
 class MovieResult(Result):
     """A film search result."""
 
-    def __init__(self, originator):
+    def __init__(self, provider):
         self.title = None
         self.duration_seconds = None
 
-        Result.__init__(self, Result.MOVIE, originator=originator)
+        Result.__init__(self, Result.MOVIE, provider=provider)
 
 class SeriesResult(Result):
     """A TV series result."""
 
     # TODO: generate Amazon series results as well as episode results
 
-    def __init__(self, originator):
+    def __init__(self, provider):
         self.title = None
         self.season_count = None
         self.episode_count = None
 
-        Result.__init__(self, Result.SERIES, originator=originator)
+        Result.__init__(self, Result.SERIES, provider=provider)
