@@ -183,6 +183,10 @@ class HuluSearch(Search):
         return results
 
     def autocomplete(self, query):
+        # don't do a search if there's no query
+        if not isinstance(query, basestring) or query == "":
+            return []
+
         params = {
             "query": query
         }
@@ -334,6 +338,9 @@ class AmazonSearch(Search):
         return results
 
     def autocomplete(self, query):
+        if not isinstance(query, basestring) or query == "":
+            return []
+
         params = {
             "method": "completion",
             "mkt": 1,
@@ -473,6 +480,9 @@ class NetflixSearch(Search):
         return results
 
     def autocomplete(self, query):
+        if not isinstance(query, basestring) or query == "":
+            return []
+
         params = {
             "oauth_consumer_key": self.config["netflix"]["public_key"],
             "v": 2.0,

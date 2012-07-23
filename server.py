@@ -19,17 +19,19 @@ def serve_static(filename):
 
 @bottle.get("/search/autocomplete")
 def autocomplete():
-    results = multivid.autocomplete(bottle.request.query["query"])
+    query = bottle.request.query["query"]
+    results = multivid.autocomplete(query)
     return {
-        "query": bottle.request.query["query"],
+        "query": query,
         "results": [r.to_dict() for r in results]
     }
 
 @bottle.get("/search/find")
 def find():
-    results = multivid.find(bottle.request.query["query"])
+    query = bottle.request.query["query"]
+    results = multivid.find(query)
     return {
-        "query": bottle.request.query["query"],
+        "query": query,
         "results": [r.to_dict() for r in results]
     }
 
