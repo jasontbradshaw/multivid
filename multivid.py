@@ -14,23 +14,13 @@ def autocomplete(query):
     # the query function we'll map onto the searchers
     qf = lambda s: s.autocomplete(query)
 
-    # get the results in parallel
-    results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
+    # get the results from the searchers
+    searcher_results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
 
-    # put the results into a dict under their searcher name
-    result_dict = {}
-    for searcher, results in itertools.izip(SEARCHERS, results):
-        result_dict[searcher.name] = [r.to_dict() for r in results]
-
-    # return the results
-    return result_dict
+    # return the results as one list
+    return [r for r in itertools.chain(*searcher_results)]
 
 def find(query):
     qf = lambda s: s.find(query)
-    results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
-
-    result_dict = {}
-    for searcher, result in itertools.izip(SEARCHERS, results):
-        result_dict[searcher.name] = result
-
-    return result_dict
+    searcher_results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
+    return [r for r in itertools.chain(*searcher_results)]

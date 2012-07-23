@@ -19,16 +19,19 @@ def serve_static(filename):
 
 @bottle.get("/search/autocomplete")
 def autocomplete():
-    return multivid.autocomplete(bottle.request.query["query"])
+    results = multivid.autocomplete(bottle.request.query["query"])
+    return {
+        "query": bottle.request.query["query"],
+        "results": [r.to_dict() for r in results]
+    }
 
 @bottle.get("/search/find")
 def find():
-    # make results objects into dicts so they can be mapped to JSON
-    result_dict = multivid.find(bottle.request.query["query"])
-    for originator, results in result_dict.items():
-        result_dict[originator] = [r.to_dict() for r in results]
-
-    return result_dict
+    results = multivid.find(bottle.request.query["query"])
+    return {
+        "query": bottle.request.query["query"],
+        "results": [r.to_dict() for r in results]
+    }
 
 bottle.debug(True)
 bottle.run(host="localhost", port=8000, reloader=True)
