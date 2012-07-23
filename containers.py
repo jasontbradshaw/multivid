@@ -1,8 +1,18 @@
 import json
 
+class Suggestion:
+    """An autocomplete suggestion."""
+    def __init__(self, provider=None):
+        self.provider = provider
+        self.suggestion = None
+
+    def to_dict(self):
+        return dict(self.__dict__)
+
 class Result:
     """A basic search result."""
 
+    # canonical types of results
     MOVIE = u"movie"
     EPISODE = u"episode"
     SERIES = u"series"
@@ -20,7 +30,6 @@ class Result:
         self.image_url = None
 
     def to_dict(self):
-        # return a copy of our own dict
         return dict(self.__dict__)
 
 class EpisodeResult(Result):

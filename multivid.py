@@ -19,8 +19,8 @@ def autocomplete(query):
 
     # put the results into a dict under their searcher name
     result_dict = {}
-    for searcher, result in itertools.izip(SEARCHERS, results):
-        result_dict[searcher.name] = result
+    for searcher, results in itertools.izip(SEARCHERS, results):
+        result_dict[searcher.name] = [r.to_dict() for r in results]
 
     # return the results
     return result_dict

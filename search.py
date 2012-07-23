@@ -43,9 +43,9 @@ class Search(object):
 
     def autocomplete(self, query):
         """
-        Get the list of lowercase strings suggested by the autocomplete search
-        for some query, partial or otherwise. If no suggestions are found, or
-        autocomplete is not supported, this should return an empty list.
+        Get the list of lowercase autocomplete suggestions from the autocomplete
+        search for some query, partial or otherwise. If no suggestions are
+        found, should return an empty list.
         """
 
         raise NotImplemented("autocomplete must be implemented!")
@@ -190,7 +190,13 @@ class HuluSearch(Search):
         response = requests.get(self.autocomplete_url, params=params)
 
         # the second item of the response list is the list of results
-        return [s.lower() for s in response.json[1]]
+        suggestions = []
+        for suggestion in response.json[1]:
+            s = containers.Suggestion(self.name)
+            s.suggestion = suggestion.lower()
+            suggestions.append(s)
+
+        return suggestions
 
 class AmazonSearch(Search):
     def __init__(self, config_file="multivid.conf"):
@@ -338,8 +344,14 @@ class AmazonSearch(Search):
 
         response = requests.get(self.autocomplete_url, params=params)
 
-        # skip the query itself and return the suggestion list
-        return [s.lower() for s in response.json[1]]
+        # the second item of the response list is the list of results
+        suggestions = []
+        for suggestion in response.json[1]:
+            s = containers.Suggestion(self.name)
+            s.suggestion = suggestion.lower()
+            suggestions.append(s)
+
+        return suggestions
 
 class NetflixSearch(Search):
     def __init__(self, config_file="multivid.conf"):
@@ -472,5 +484,13 @@ class NetflixSearch(Search):
 
         # if there are no results, the 'title' field doesn't exist
         if "title" in response.json["autocomplete"]:
-            return [r.lower() for r in response.json["autocomplete"]["title"]]
+            suggestions = []
+            for suggestion in response.json["autocomplete"]["title"]:
+                s = containers.Suggestion(self.name)
+                s.suggestion = suggestion.lower()
+                suggestions.append(s)
+
+            return suggestions
+
+        # title field didn't exist
         return []
