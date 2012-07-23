@@ -94,6 +94,10 @@ class HuluSearch(Search):
         Search.__init__(self, config_file=None)
 
     def find(self, query):
+        # don't do a search if there's no query
+        if not isinstance(query, basestring) or query == "":
+            return []
+
         # we make two requests, one for movies and one for TV shows. this is to
         # filter out useless clips and previews and the like.
         tv_params = {
@@ -259,6 +263,9 @@ class AmazonSearch(Search):
         return params
 
     def find(self, query):
+        if not isinstance(query, basestring) or query == "":
+            return []
+
         # get the keys from the config
         public_key = self.config["amazon"]["public_key"]
         private_key = self.config["amazon"]["private_key"]
@@ -419,6 +426,9 @@ class NetflixSearch(Search):
         return params
 
     def find(self, query):
+        if not isinstance(query, basestring) or query == "":
+            return []
+
         # get the keys from the config
         public_key = self.config["netflix"]["public_key"]
         private_key = self.config["netflix"]["private_key"]
