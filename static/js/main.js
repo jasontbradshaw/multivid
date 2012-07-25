@@ -131,7 +131,8 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
     },
 
     defaults: {
-        collection: null
+        collection: null,
+        model: null
     },
 
     initialize: function (models, options) {
