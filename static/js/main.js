@@ -39,7 +39,7 @@ var SearchBar = Backbone.Model.extend({
 
         // minimum amount of time b/w AJAX calls
         minUpdateIntervalMs: 200,
-        updateTimeout: null // id for the last update timeout
+        timeoutId: null // id for the last update timeout
     },
 
     initialize: function () {
@@ -52,21 +52,21 @@ var SearchBar = Backbone.Model.extend({
             this.set({'query': query});
 
             // clear any existing update timeout
-            if (this.get('updateTimeout') !== null) {
-                clearTimeout(this.get('updateTimeout'));
+            if (this.get('timeoutId') !== null) {
+                clearTimeout(this.get('timeoutId'));
             }
 
+            // set a timeout to update once input is done coming for a bit
             var self = this;
             var timeoutId = setTimeout(function () {
+                // update suggesion list and clear the timeout id
                 self.acSuggestionList.update(query);
-
-                // clear the timeout id once done
-                self.set({'updateTimeout': null});
+                self.set({'timeoutId': null});
 
             }, this.get('minUpdateIntervalMs'));
 
             // store the timeout id for the next update call
-            this.set({'updateTimeout': timeoutId});
+            this.set({'timeoutId': timeoutId});
         }
     }
 });
