@@ -142,7 +142,7 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
 
         // set default options
         if (!this.options.maxSuggestionsRendered) {
-            this.options.maxSuggestionsRendered = 15;
+            this.options.maxSuggestionsRendered = 10;
         }
     },
 
@@ -189,7 +189,7 @@ $(function () {
         collection: acSuggestionList,
         model: searchBar,
         el: $('#search-bar ul')
-    }, {maxSuggestionsRendered: 15});
+    }, {maxSuggestionsRendered: 10});
 
     searchBar.set({acSuggestionList: acSuggestionList});
 });
