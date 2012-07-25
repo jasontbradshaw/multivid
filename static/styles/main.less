@@ -16,10 +16,10 @@
     color: @color;
 }
 
-// simple fade-in animation
+// fade in
 @-webkit-keyframes fade-in {
     from { opacity: 0.0; }
-    to   { opacity: 1.0; }
+    to   { }
 }
 
 * {
@@ -90,6 +90,10 @@ body {
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
+
+            // quick fade-in
+            -webkit-animation-duration: 50ms;
+            -webkit-animation-name: fade-in;
 
             &:hover {
                 color: @color-bright;
