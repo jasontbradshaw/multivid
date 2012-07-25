@@ -503,14 +503,15 @@ class NetflixSearch(Search):
         response = requests.get(self.autocomplete_url, params=params)
 
         # if there are no results, the 'title' field doesn't exist
-        if "title" in response.json["autocomplete"]:
-            suggestions = []
-            for suggestion in response.json["autocomplete"]["title"]:
-                s = containers.Suggestion(self.name)
-                s.suggestion = suggestion.lower()
-                suggestions.append(s)
+        if response.json["autocomplete"] is not None:
+            if "title" in response.json["autocomplete"]:
+                suggestions = []
+                for suggestion in response.json["autocomplete"]["title"]:
+                    s = containers.Suggestion(self.name)
+                    s.suggestion = suggestion.lower()
+                    suggestions.append(s)
 
-            return suggestions
+                return suggestions
 
         # title field didn't exist
         return []
