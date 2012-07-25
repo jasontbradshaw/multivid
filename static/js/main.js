@@ -38,7 +38,7 @@ var SearchBar = Backbone.Model.extend({
         query: '',
         acSuggestionList: null,
 
-        // minimum amount of time b/w AJAX calls
+        // minimum amount of time between AJAX calls
         minUpdateIntervalMs: 200,
         timeoutId: null // id for the last update timeout
     },
@@ -54,7 +54,7 @@ var SearchBar = Backbone.Model.extend({
 
             // set a timeout to update once input is done coming for a bit
             var timeoutId = setTimeout(_.bind(function () {
-                // update suggesion list and clear the timeout id
+                // update suggestion list and clear the timeout id
                 this.get('acSuggestionList').updateSuggestions(query);
                 this.set({'timeoutId': null});
 
@@ -72,6 +72,10 @@ var SearchBarView = Backbone.View.extend({
     events: {
         'keyup input': 'updateQuery',
         'keydown input': 'updateQuery'
+    },
+
+    defaults: {
+        model: null
     },
 
     initialize: function () {
@@ -114,6 +118,10 @@ var AutocompleteSuggestionList = Backbone.Collection.extend({
 
 var AutocompleteSuggestionListView = Backbone.View.extend({
     template: Mustache.compile(tmplAcSuggestion),
+
+    defaults: {
+        collection: null
+    },
 
     initialize: function () {
         this.collection.on('reset', this.render, this);
