@@ -97,12 +97,6 @@ var AutocompleteSuggestion = Backbone.Model.extend({
     }
 });
 
-var AutocompleteSuggestionView = Backbone.View.extend({
-    render: {
-
-    }
-});
-
 // the suggestions collection below the search bar
 var AutocompleteSuggestionList = Backbone.Collection.extend({
     model: AutocompleteSuggestion,
