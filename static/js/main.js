@@ -36,15 +36,11 @@ function ($, _, Backbone, Mustache, tmplSearchBar, tmplAcSuggestion) {
 var SearchBar = Backbone.Model.extend({
     defaults: {
         query: '',
+        acSuggestionList: null,
 
         // minimum amount of time b/w AJAX calls
         minUpdateIntervalMs: 200,
         timeoutId: null // id for the last update timeout
-    },
-
-    initialize: function () {
-        this.view = new SearchBarView({model: this});
-        this.acSuggestionList = new AutocompleteSuggestionList();
     },
 
     updateQuery: function (query) {
@@ -59,7 +55,7 @@ var SearchBar = Backbone.Model.extend({
             // set a timeout to update once input is done coming for a bit
             var timeoutId = setTimeout(_.bind(function () {
                 // update suggesion list and clear the timeout id
-                this.acSuggestionList.updateSuggestions(query);
+                this.get('acSuggestionList').updateSuggestions(query);
                 this.set({'timeoutId': null});
 
             }, this), this.get('minUpdateIntervalMs'));
@@ -101,17 +97,16 @@ var AutocompleteSuggestion = Backbone.Model.extend({
     }
 });
 
+var AutocompleteSuggestionView = Backbone.View.extend({
+    render: {
+
+    }
+});
+
 // the suggestions collection below the search bar
 var AutocompleteSuggestionList = Backbone.Collection.extend({
     model: AutocompleteSuggestion,
     url: '/search/autocomplete',
-
-    initialize: function () {
-        this.view = new AutocompleteSuggestionListView({
-            el: $('#search-bar ul'),
-            collection: this
-        });
-    },
 
     updateSuggestions: function (query) {
         var xhr = $.getJSON(this.url, {'query': query});
@@ -146,9 +141,23 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
     },
 });
 
+//
 // ENTRY POINT
+//
+
 $(function () {
     var searchBar = new SearchBar();
+    var searchBarView = new SearchBarView({
+        model: searchBar
+    });
+
+    var acSuggestionList = new AutocompleteSuggestionList();
+    var acSuggestionListView = new AutocompleteSuggestionListView({
+        collection: acSuggestionList,
+        el: $('#search-bar ul'),
+    });
+
+    searchBar.set({acSuggestionList: acSuggestionList});
 });
 
 });
