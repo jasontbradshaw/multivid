@@ -60,7 +60,7 @@ var SearchBar = Backbone.Model.extend({
             var self = this;
             var timeoutId = setTimeout(function () {
                 // update suggesion list and clear the timeout id
-                self.acSuggestionList.update(query);
+                self.acSuggestionList.updateSuggestions(query);
                 self.set({'timeoutId': null});
 
             }, this.get('minUpdateIntervalMs'));
@@ -114,7 +114,7 @@ var AutocompleteSuggestionList = Backbone.Collection.extend({
         });
     },
 
-    update: function (query) {
+    updateSuggestions: function (query) {
         var xhr = $.getJSON(this.url, {'query': query});
 
         // update the collection on reset
