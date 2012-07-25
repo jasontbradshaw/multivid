@@ -43,10 +43,6 @@ var SearchBar = Backbone.Model.extend({
         timeoutId: null // id for the last update timeout
     },
 
-    initialize: function () {
-        this.on('change:query', this.updateSuggestions, this);
-    },
-
     updateSuggestions: function () {
         // clear any existing update timeout
         if (this.get('timeoutId') !== null) {
@@ -70,8 +66,8 @@ var SearchBarView = Backbone.View.extend({
     template: Mustache.compile(tmplSearchBar),
 
     events: {
-        'keyup input': 'updateQuery',
-        'keydown input': 'updateQuery'
+        'keyup input': 'inputUpdate',
+        'keydown input': 'inputUpdate'
     },
 
     defaults: {
@@ -88,14 +84,17 @@ var SearchBarView = Backbone.View.extend({
         this.$input.focus();
 
         // update the input if the query changes
-        this.model.on('change:query', this.updateInput, this);
+        this.model.on('change:query', this.mirrorQuery, this);
     },
 
-    updateQuery: function () {
+    inputUpdate: function () {
+        // update the model's query value and suggest more options
         this.model.set({query: this.$input.val()});
+        this.model.updateSuggestions();
     },
 
-    updateInput: function () {
+    mirrorQuery: function () {
+        // copy the model's query option into the input
         this.$input.val(this.model.get('query'));
     }
 });
