@@ -43,26 +43,26 @@ var SearchBar = Backbone.Model.extend({
         timeoutId: null // id for the last update timeout
     },
 
-    updateQuery: function (query) {
-        if (query !== this.get('query')) {
-            this.set({'query': query});
+    initialize: function () {
+        this.on('change:query', this.updateSuggestions, this);
+    },
 
-            // clear any existing update timeout
-            if (this.get('timeoutId') !== null) {
-                clearTimeout(this.get('timeoutId'));
-            }
-
-            // set a timeout to update once input is done coming for a bit
-            var timeoutId = setTimeout(_.bind(function () {
-                // update suggestion list and clear the timeout id
-                this.get('acSuggestionList').updateSuggestions(query);
-                this.set({'timeoutId': null});
-
-            }, this), this.get('minUpdateIntervalMs'));
-
-            // store the timeout id for the next update call
-            this.set({'timeoutId': timeoutId});
+    updateSuggestions: function () {
+        // clear any existing update timeout
+        if (this.get('timeoutId') !== null) {
+            clearTimeout(this.get('timeoutId'));
         }
+
+        // set a timeout to update once input is done coming for a bit
+        var timeoutId = setTimeout(_.bind(function () {
+            // update suggestion list and clear the timeout id
+            this.get('acSuggestionList').updateSuggestions(this.get('query'));
+            this.set({'timeoutId': null});
+
+        }, this), this.get('minUpdateIntervalMs'));
+
+        // store the timeout id for the next update call
+        this.set({'timeoutId': timeoutId});
     }
 });
 
@@ -86,10 +86,17 @@ var SearchBarView = Backbone.View.extend({
         // cache a ref to the input and focus it
         this.$input = this.$el.find('input');
         this.$input.focus();
+
+        // update the input if the query changes
+        this.model.on('change:query', this.updateInput, this);
     },
 
-    updateQuery: function (e) {
-        this.model.updateQuery(this.$input.val());
+    updateQuery: function () {
+        this.model.set({query: this.$input.val()});
+    },
+
+    updateInput: function () {
+        this.$input.val(this.model.get('query'));
     }
 });
 
@@ -119,11 +126,15 @@ var AutocompleteSuggestionList = Backbone.Collection.extend({
 var AutocompleteSuggestionListView = Backbone.View.extend({
     template: Mustache.compile(tmplAcSuggestion),
 
+    events: {
+        'click li': 'clickSuggestion'
+    },
+
     defaults: {
         collection: null
     },
 
-    initialize: function () {
+    initialize: function (models, options) {
         this.collection.on('reset', this.render, this);
     },
 
@@ -141,6 +152,12 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
 
         return this;
     },
+
+    clickSuggestion: function (e) {
+        // set the query to the clicked value, then reset the suggestions
+        this.model.set({query: $(e.target).text()});
+        this.collection.reset();
+    }
 });
 
 //
@@ -156,7 +173,8 @@ $(function () {
     var acSuggestionList = new AutocompleteSuggestionList();
     var acSuggestionListView = new AutocompleteSuggestionListView({
         collection: acSuggestionList,
-        el: $('#search-bar ul'),
+        model: searchBar,
+        el: $('#search-bar ul')
     });
 
     searchBar.set({acSuggestionList: acSuggestionList});
