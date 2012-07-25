@@ -16,7 +16,10 @@ require.config({
             deps: ["underscore", "jquery"],
             exports: "Backbone"
         }
-    }
+    },
+
+    // add dummy params to break caching
+    urlArgs: "__nocache__=" +  (new Date()).getTime()
 });
 
 require(["jquery", "underscore","backbone", "mustache"],
