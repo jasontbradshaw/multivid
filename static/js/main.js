@@ -57,13 +57,12 @@ var SearchBar = Backbone.Model.extend({
             }
 
             // set a timeout to update once input is done coming for a bit
-            var self = this;
-            var timeoutId = setTimeout(function () {
+            var timeoutId = setTimeout(_.bind(function () {
                 // update suggesion list and clear the timeout id
-                self.acSuggestionList.updateSuggestions(query);
-                self.set({'timeoutId': null});
+                this.acSuggestionList.updateSuggestions(query);
+                this.set({'timeoutId': null});
 
-            }, this.get('minUpdateIntervalMs'));
+            }, this), this.get('minUpdateIntervalMs'));
 
             // store the timeout id for the next update call
             this.set({'timeoutId': timeoutId});
@@ -118,10 +117,9 @@ var AutocompleteSuggestionList = Backbone.Collection.extend({
         var xhr = $.getJSON(this.url, {'query': query});
 
         // update the collection on reset
-        var collection = this;
-        xhr.success(function (data) {
-            collection.reset(data.results);
-        });
+        xhr.success(_.bind(function (data) {
+            this.reset(data.results);
+        }, this));
     }
 });
 
