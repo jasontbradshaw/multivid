@@ -169,8 +169,8 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
     },
 
     clickSuggestion: function (e) {
-        // silently set the query to the clicked value, then reset suggestions
-        this.model.set({query: $(e.target).text()}, {silent: true});
+        // set the query to the clicked value, then reset the suggestions
+        this.model.set({query: $(e.target).text()});
         this.collection.reset();
     }
 });
