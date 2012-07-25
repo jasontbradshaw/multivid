@@ -16,6 +16,12 @@
     color: @color;
 }
 
+// simple fade-in animation
+@-webkit-keyframes fade-in {
+    from { opacity: 0.0; }
+    to   { opacity: 1.0; }
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -37,6 +43,10 @@ body {
 
     @hpadding: @font-size * 0.5;
     @vpadding: @font-size * 0.333;
+
+    // fade-in animation
+    -webkit-animation-duration: 250ms;
+    -webkit-animation-name: fade-in;
 
     input {
         .font(inherit, @color-bright);
