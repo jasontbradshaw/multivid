@@ -26,9 +26,10 @@ body {
 }
 
 #search-bar {
-    .font;
+    @font-size: 24px;
+    .font(@font-size);
 
-    width: 500px;
+    width: @font-size * 30;
 
     margin-top: 15%;
     margin-left: auto;
