@@ -135,8 +135,16 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
         model: null
     },
 
-    initialize: function (models, options) {
+    initialize: function (options) {
         this.collection.on('reset', this.render, this);
+
+        // store any passed-in options
+        this.options = options || {};
+
+        // set default options
+        if (!this.options.maxSuggestionsRendered) {
+            this.options.maxSuggestionsRendered = 15;
+        }
     },
 
     render: function () {
@@ -147,7 +155,13 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
         this.$el.children().remove();
 
         // add all the new suggestions
+        var renderedCount = 0;
         _.each(suggestions, function (suggestion) {
+            // stop rendering once the cutoff has been reached
+            if (renderedCount++ >= this.options.maxSuggestionsRendered) {
+                return false;
+            }
+
             this.$el.append(this.template(suggestion));
         }, this);
 
@@ -176,7 +190,7 @@ $(function () {
         collection: acSuggestionList,
         model: searchBar,
         el: $('#search-bar ul')
-    });
+    }, {maxSuggestionsRendered: 15});
 
     searchBar.set({acSuggestionList: acSuggestionList});
 });
