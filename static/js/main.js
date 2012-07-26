@@ -98,6 +98,7 @@ var SearchBarView = Backbone.View.extend({
         if (!this.$input.is(':focus')) {
             this.$input.val(this.model.get('query'));
         }
+        this.$input.focus();
     }
 });
 
