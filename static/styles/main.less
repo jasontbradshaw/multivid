@@ -37,11 +37,9 @@ body {
 
     width: @font-size * 30;
 
-    margin-top: 15%;
-    margin-left: auto;
-    margin-right: auto;
+    margin: 15px;
 
-    @hpadding: @font-size * 0.5;
+    @hpadding: @font-size * 0.8;
     @vpadding: @font-size * 0.333;
 
     // fade-in animation
@@ -49,6 +47,7 @@ body {
     -webkit-animation-name: fade-in;
 
     input {
+        border-radius: @font-size * 3;
         .font(inherit, @color-bright);
 
         // placeholder text for the input
@@ -75,9 +74,8 @@ body {
 
         // a suggestion
         li {
-            color: @color-light;
-            background-color: @color-mid;
-            opacity: 0.65;
+            color: @color-bright;
+            opacity: 0.2;
 
             cursor: pointer;
 
@@ -86,6 +84,7 @@ body {
             padding-top: @vpadding;
             padding-bottom: @vpadding;
 
+            // don't let text wrap onto multiple lines
             width: inherit;
             overflow: hidden;
             white-space: nowrap;
@@ -100,7 +99,6 @@ body {
             -webkit-transition-duration: 150ms;
 
             &:hover {
-                color: @color-bright;
                 opacity: 1.0;
             }
         }
