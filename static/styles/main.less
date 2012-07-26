@@ -8,6 +8,9 @@
 @color-hl-light: #005ddc;
 @color-hl-dark: #002a66;
 
+// utility colors
+@color-transparent: rgba(255, 255, 255, 0.0);
+
 // the font we'll be using
 .font(@size: inherit, @color: inherit, @weight: inherit) {
     font-family: 'Droid Sans', sans-serif;
@@ -47,13 +50,34 @@ body {
     -webkit-animation-name: fade-in;
 
     input {
-        border-radius: @font-size * 3;
-        .font(inherit, @color-bright);
+        // style the input as a circle
+        .search-input-circle {
+            // visually hide any text
+            color: @color-transparent;
+            &::-webkit-input-placeholder { color: inherit; }
 
-        // placeholder text for the input
-        &::-webkit-input-placeholder {
-            color: @color-light;
+            // reduce width to make it appear as a circle
+            width: @font-size * 0.25;
         }
+
+        // style the input as a normal search bar
+        .search-input-normal {
+            // give it the normal colors
+            &::-webkit-input-placeholder {
+                color: @color-light;
+            }
+            color: @color-bright;
+
+            // make it wide enough to be useful
+            width: @font-size * 30;
+        }
+
+        .font(inherit);
+        border-radius: @font-size * 3;
+
+        // default colors for the circle bar
+        .search-input-circle;
+
         padding-top: @vpadding;
         padding-bottom: @vpadding;
         padding-left: @hpadding;
@@ -62,10 +86,16 @@ body {
         background-color: @color-mid;
         border: none;
         height: 100%;
-        width: inherit;
 
         // remove ugly built-in highlighting when the box is focused
         &:focus { outline: none; }
+
+        // animate to the normal width on hover and focus
+        -webkit-transition-duration: 250ms;
+        -webkit-transition-property: width;
+
+        &:hover { .search-input-normal; }
+        &:focus { .search-input-normal; }
     }
 
     // the autocomplete suggestion list
