@@ -132,8 +132,8 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
     },
 
     defaults: {
-        collection: null,
-        model: null
+        collection: null, // the AC collection
+        model: null // the search bar
     },
 
     initialize: function (models, options) {
