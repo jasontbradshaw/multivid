@@ -136,7 +136,7 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
         model: null
     },
 
-    initialize: function (options) {
+    initialize: function (models, options) {
         this.collection.on('reset', this.render, this);
 
         // store any passed-in options
@@ -191,7 +191,7 @@ $(function () {
         collection: acSuggestionList,
         model: searchBar,
         el: $('#search-bar ul')
-    }, {maxSuggestionsRendered: 10});
+    }, {maxSuggestionsRendered: 20});
 
     searchBar.set({acSuggestionList: acSuggestionList});
 });
