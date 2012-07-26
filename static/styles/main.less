@@ -55,6 +55,7 @@ body {
             // visually hide any text nad reduce width to make it a circle
             color: @color-transparent;
             width: @font-size * 0.25;
+            background-position: @font-size * 0.45 @font-size * 0.46;
         }
 
         // style the input as a normal search bar
@@ -62,10 +63,17 @@ body {
             // give it the normal colors and make it wide enough to be useful
             color: @color-bright;
             width: @font-size * 30;
+            background-position: @font-size * 31.3 @font-size * 0.46;
+            padding-right: @font-size * 2;
         }
 
         .font(inherit);
         background-color: @color-mid;
+
+        // magnifying glass search symbol
+        background-image: url(/static/img/magnifying-glass.svg);
+        background-repeat: no-repeat;
+        background-size: @font-size;
 
         // round the borders completely
         border: none;
@@ -84,7 +92,7 @@ body {
         .search-input-circle;
 
         // animate to the normal width on hover, focus, and non-empty content
-        -webkit-transition-property: width, color;
+        -webkit-transition-property: width, color, background-position, padding-right;
         -webkit-transition-duration: 250ms;
         -webkit-transition-delay: 250ms;
 
