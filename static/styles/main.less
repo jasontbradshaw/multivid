@@ -52,50 +52,45 @@ body {
     input {
         // style the input as a circle
         .search-input-circle {
-            // visually hide any text
+            // visually hide any text nad reduce width to make it a circle
             color: @color-transparent;
-            &::-webkit-input-placeholder { color: inherit; }
-
-            // reduce width to make it appear as a circle
             width: @font-size * 0.25;
         }
 
         // style the input as a normal search bar
         .search-input-normal {
-            // give it the normal colors
-            &::-webkit-input-placeholder {
-                color: @color-light;
-            }
+            // give it the normal colors and make it wide enough to be useful
             color: @color-bright;
-
-            // make it wide enough to be useful
             width: @font-size * 30;
         }
 
         .font(inherit);
+        background-color: @color-mid;
+
+        // round the borders completely
+        border: none;
         border-radius: @font-size * 3;
 
-        // default colors for the circle bar
-        .search-input-circle;
-
+        // padding is shared by the input and suggestions
         padding-top: @vpadding;
         padding-bottom: @vpadding;
         padding-left: @hpadding;
         padding-right: @hpadding;
 
-        background-color: @color-mid;
-        border: none;
-        height: 100%;
-
         // remove ugly built-in highlighting when the box is focused
         &:focus { outline: none; }
 
-        // animate to the normal width on hover and focus
+        // default to the circle
+        .search-input-circle;
+
+        // animate to the normal width on hover, focus, and non-empty content
+        -webkit-transition-property: width, color;
         -webkit-transition-duration: 250ms;
-        -webkit-transition-property: width;
+        -webkit-transition-delay: 250ms;
 
         &:hover { .search-input-normal; }
         &:focus { .search-input-normal; }
+        &:valid { .search-input-normal; }
     }
 
     // the autocomplete suggestion list
@@ -121,16 +116,11 @@ body {
             text-overflow: ellipsis;
 
             // quick fade-in
-            -webkit-animation-duration: 50ms;
-            -webkit-animation-name: fade-in;
+            -webkit-animation: fade-in 50ms;
 
             // smooth highlight animation
-            -webkit-transition-property: opacity;
-            -webkit-transition-duration: 150ms;
-
-            &:hover {
-                opacity: 1.0;
-            }
+            -webkit-transition: opacity 150ms;
+            &:hover { opacity: 1.0; }
         }
     }
 }

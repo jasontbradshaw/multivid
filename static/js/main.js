@@ -76,7 +76,7 @@ var SearchBarView = Backbone.View.extend({
 
     initialize: function () {
         // create the element and add it to the document
-        this.setElement($(this.template({placeholder: 'search'})));
+        this.setElement($(this.template()));
         this.$el.appendTo($('body'));
 
         // cache a ref to the input and focus it
