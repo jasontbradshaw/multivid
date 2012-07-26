@@ -94,8 +94,10 @@ var SearchBarView = Backbone.View.extend({
     },
 
     mirrorQuery: function () {
-        // copy the model's query option into the input
-        this.$input.val(this.model.get('query'));
+        // copy the model's query option into the input if not focused
+        if (!this.$input.is(':focus')) {
+            this.$input.val(this.model.get('query'));
+        }
     }
 });
 
