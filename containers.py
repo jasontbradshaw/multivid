@@ -24,6 +24,7 @@ class Result:
         # who the search result came from
         self.provider = provider
 
+        self.title = None
         self.description = None
         self.rating_fraction = None
         self.url = None
@@ -36,7 +37,6 @@ class EpisodeResult(Result):
     """A television search result."""
 
     def __init__(self, provider):
-        self.title = None
         self.series_title = None
         self.season_number = None
         self.episode_number = None
@@ -48,7 +48,6 @@ class MovieResult(Result):
     """A film search result."""
 
     def __init__(self, provider):
-        self.title = None
         self.duration_seconds = None
 
         Result.__init__(self, Result.MOVIE, provider=provider)
@@ -59,7 +58,6 @@ class SeriesResult(Result):
     # TODO: generate Amazon series results as well as episode results
 
     def __init__(self, provider):
-        self.title = None
         self.season_count = None
         self.episode_count = None
 
