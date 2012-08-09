@@ -144,16 +144,13 @@ body {
         &.hulu { border-top: @border-size @border-style @color-hulu; }
         &.netflix { border-top: @border-size @border-style @color-netflix; }
 
-        .series-title {
+        .title-common {
             padding: 5px;
-            color: @color-bright;
-            background-color: fade(@color-mid, 60%);
+            .font(20px, @color-bright);
+            background-color: fade(@color-mid, 70%);
         }
 
-        .title {
-            padding: 5px;
-            color: @color-bright;
-            background-color: fade(@color-mid, 60%);
-        }
+        .series-title { .title-common; }
+        .title { .title-common; }
     }
 }
