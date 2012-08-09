@@ -44,14 +44,6 @@ class EpisodeResult(Result):
 
         Result.__init__(self, Result.EPISODE, provider=provider)
 
-class MovieResult(Result):
-    """A film search result."""
-
-    def __init__(self, provider):
-        self.duration_seconds = None
-
-        Result.__init__(self, Result.MOVIE, provider=provider)
-
 class SeriesResult(Result):
     """A TV series result."""
 
@@ -62,3 +54,11 @@ class SeriesResult(Result):
         self.episode_count = None
 
         Result.__init__(self, Result.SERIES, provider=provider)
+
+class MovieResult(Result):
+    """A film search result."""
+
+    def __init__(self, provider):
+        self.duration_seconds = None
+
+        Result.__init__(self, Result.MOVIE, provider=provider)
