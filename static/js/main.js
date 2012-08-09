@@ -192,7 +192,7 @@ $(function () {
         collection: acSuggestionList,
         model: searchBar,
         el: $('#search-bar ul')
-    }, {maxSuggestionsRendered: 20});
+    }, {maxSuggestionsRendered: 18});
 
     searchBar.set({acSuggestionList: acSuggestionList});
 });
