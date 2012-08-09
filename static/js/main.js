@@ -162,23 +162,17 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
         }, this);
 
         // remove suggestions round-robin until we have the correct number
-        var brandSuggestionsList = _.toArray(brandSuggestions);
-        var rr = 0;
-        while (_.flatten(brandSuggestionsList).length >
+        while (_.flatten(brandSuggestions).length >
                 this.options.maxSuggestionsRendered) {
-            // remove the last suggestion for the brand
-            brandSuggestionsList[rr].pop();
-
-            // wrap the counter around to the next brand
-            rr = (rr + 1) % _.size(brandSuggestions);
+            // remove the last suggestion of the brand with the most suggestions
+            _.max(brandSuggestions, function (s) { return _.size(s); }).pop();
         }
 
         // clear out the old suggestions
         this.$el.children().remove();
 
         // add the new suggestions
-        var suggestions = _.flatten(brandSuggestionsList);
-        _.each(suggestions, function (suggestion) {
+        _.each(_.flatten(brandSuggestions), function (suggestion) {
             this.$el.append(this.template(suggestion));
         }, this);
 
