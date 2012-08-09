@@ -8,6 +8,11 @@
 @color-hl-light: #005ddc;
 @color-hl-dark: #002a66;
 
+// brand colors
+@color-amazon: #e47911;
+@color-hulu: #69b521;
+@color-netflix: #b9090b;
+
 // utility colors
 @color-transparent: rgba(255, 255, 255, 0.0);
 
@@ -28,6 +33,7 @@
 * {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
 }
 
 body {
@@ -35,12 +41,11 @@ body {
 }
 
 #search-bar {
-    @font-size: 24px;
+    @font-size: 32px;
     .font(@font-size);
 
-    width: @font-size * 30;
-
-    margin: 15px;
+    width: 100%;
+    padding: 15px;
 
     @hpadding: @font-size * 0.8;
     @vpadding: @font-size * 0.333;
@@ -50,34 +55,12 @@ body {
     -webkit-animation-name: fade-in;
 
     input {
-        // style the input as a circle
-        .search-input-circle {
-            // visually hide any text nad reduce width to make it a circle
-            color: @color-transparent;
-            width: @font-size * 0.25;
-            background-position: @font-size * 0.45 @font-size * 0.46;
-        }
+        .font(inherit, @color-bright);
 
-        // style the input as a normal search bar
-        .search-input-normal {
-            // give it the normal colors and make it wide enough to be useful
-            color: @color-bright;
-            width: @font-size * 30;
-            background-position: @font-size * 31 @font-size * 0.46;
-            padding-right: @font-size * 1.8;
-        }
+        width: 100%;
 
-        .font(inherit);
-        background-color: @color-mid;
-
-        // magnifying glass search symbol
-        background-image: url(/static/img/magnifying-glass.svg);
-        background-repeat: no-repeat;
-        background-size: @font-size;
-
-        // round the borders completely
         border: none;
-        border-radius: @font-size * 3;
+        background-color: @color-mid;
 
         // padding is shared by the input and suggestions
         padding-top: @vpadding;
@@ -87,18 +70,6 @@ body {
 
         // remove ugly built-in highlighting when the box is focused
         &:focus { outline: none; }
-
-        // default to the circle
-        .search-input-circle;
-
-        // animate to the normal width on hover, focus, and non-empty content
-        -webkit-transition-property: width, color, background-position, padding-right;
-        -webkit-transition-duration: 250ms;
-        -webkit-transition-delay: 250ms;
-
-        &:hover { .search-input-normal; }
-        &:focus { .search-input-normal; }
-        &:valid { .search-input-normal; }
     }
 
     // the autocomplete suggestion list
@@ -128,7 +99,20 @@ body {
 
             // smooth highlight animation
             -webkit-transition: opacity 150ms;
-            &:hover { opacity: 1.0; }
+            -webkit-transition: font-size 150ms;
+
+            // make sure the suggestion's total height doesn't change
+            line-height: @font-size;
+            &:hover {
+                opacity: 1.0;
+                font-size: 1.2em;
+            }
+
+            // color results by brand
+            @border-size: 3px;
+            &.ac_suggestion_amazon { border-left: @border-size solid @color-amazon; }
+            &.ac_suggestion_hulu { border-left: @border-size solid @color-hulu; }
+            &.ac_suggestion_netflix { border-left: @border-size solid @color-netflix; }
         }
     }
 }
