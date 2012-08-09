@@ -157,6 +157,8 @@ class HuluSearch(Search):
         # the canonical results list
         results = []
 
+        # TODO: get all better image URLs at once, rather than piecemeal
+
         series_name_set = set()
         for video in tv_soup.videos("video", recursive=False):
             # add series as well as episodes, but only if unique
