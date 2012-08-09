@@ -161,7 +161,7 @@ class HuluSearch(Search):
             r = containers.EpisodeResult(self.name)
 
             r.series_title = unicode(video.show.find("name").string)
-            r.episode_title = unicode(video.title.string)
+            r.title = unicode(video.title.string)
             r.season_number = int(video.find("season-number").string)
             r.episode_number = int(video.find("episode-number").string)
             r.description = unicode(video.description.string)
@@ -325,7 +325,7 @@ class AmazonSearch(Search):
                                 # get the season number
                                 r.season_number = int(rel_attrs.episodesequence.string)
 
-                    r.episode_title = unicode(attrs.title.string)
+                    r.title = unicode(attrs.title.string)
                     r.episode_number = int(attrs.episodesequence.string)
 
                 r.url = unicode(item.detailpageurl.string)

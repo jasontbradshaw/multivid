@@ -36,8 +36,8 @@ class EpisodeResult(Result):
     """A television search result."""
 
     def __init__(self, provider):
+        self.title = None
         self.series_title = None
-        self.episode_title = None
         self.season_number = None
         self.episode_number = None
         self.duration_seconds = None
