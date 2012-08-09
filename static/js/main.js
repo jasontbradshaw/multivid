@@ -150,20 +150,35 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
     },
 
     render: function () {
-        // get the suggestion list from the collection
-        var suggestions = this.collection.toJSON();
+
+        // add all the new suggestions
+        var brandSuggestions = {};
+        _.each(this.collection.toJSON(), function (suggestion) {
+            if (!brandSuggestions[suggestion.provider]) {
+                brandSuggestions[suggestion.provider] = [];
+            }
+
+            brandSuggestions[suggestion.provider].push(suggestion);
+        }, this);
+
+        // remove suggestions round-robin until we have the correct number
+        var brandSuggestionsList = _.toArray(brandSuggestions);
+        var rr = 0;
+        while (_.flatten(brandSuggestionsList).length >
+                this.options.maxSuggestionsRendered) {
+            // remove the last suggestion for the brand
+            brandSuggestionsList[rr].pop();
+
+            // wrap the counter around to the next brand
+            rr = (rr + 1) % _.size(brandSuggestions);
+        }
 
         // clear out the old suggestions
         this.$el.children().remove();
 
-        // add all the new suggestions
-        var renderedCount = 0;
+        // add the new suggestions
+        var suggestions = _.flatten(brandSuggestionsList);
         _.each(suggestions, function (suggestion) {
-            // stop rendering once the cutoff has been reached
-            if (renderedCount++ >= this.options.maxSuggestionsRendered) {
-                return false;
-            }
-
             this.$el.append(this.template(suggestion));
         }, this);
 
@@ -192,7 +207,7 @@ $(function () {
         collection: acSuggestionList,
         model: searchBar,
         el: $('#search-bar ul')
-    }, {maxSuggestionsRendered: 18});
+    }, {maxSuggestionsRendered: 16});
 
     searchBar.set({acSuggestionList: acSuggestionList});
 });
