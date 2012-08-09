@@ -144,7 +144,7 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
         this.options = options || {};
 
         // set default options
-        if (!this.options.maxSuggestionsRendered) {
+        if (typeof this.options.maxSuggestionsRendered === 'undefined') {
             this.options.maxSuggestionsRendered = 10;
         }
     },
