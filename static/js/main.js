@@ -126,7 +126,7 @@ var AutocompleteSuggestionList = Backbone.Collection.extend({
 });
 
 var AutocompleteSuggestionListView = Backbone.View.extend({
-    template: Mustache.compile(tmplAcSuggestion),
+    itemTemplate: Mustache.compile(tmplAcSuggestion),
 
     events: {
         'click li': 'clickSuggestion'
@@ -172,7 +172,7 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
 
         // add the new suggestions
         _.each(_.flatten(brandSuggestions), function (suggestion) {
-            this.$el.append(this.template(suggestion));
+            this.$el.append(this.itemTemplate(suggestion));
         }, this);
 
         return this;
