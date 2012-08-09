@@ -93,6 +93,37 @@ class HuluSearch(Search):
 
         Search.__init__(self, config_file=None)
 
+    @staticmethod
+    def get_best_image_url(orig_image_url):
+        """
+        Attempts to look up a better image for the given URL using HTTP HEAD
+        requests and known common image sizes. If one is found, returns the best
+        one available, otherwise returns the original URL.
+        """
+
+        # the default size returned
+        orig_size = "145x80"
+
+        # better common sizes
+        better_size = "384x288"
+        best_size = "512x288"
+
+        # build the better URLs
+        better_img_url = orig_image_url.replace(orig_size, better_size)
+        best_img_url = orig_image_url.replace(orig_size, better_size)
+
+        # build the better HEAD requests
+        better_img_req = arequests.head(better_img_url)
+        best_img_req = arequests.head(best_img_url)
+
+        # try to return the best image URL possible
+        best_url = orig_image_url
+        for response in arequests.map((better_img_req, best_img_req)):
+            if response.ok:
+                best_url = response.url
+
+        return best_url
+
     def find(self, query):
         # don't do a search if there's no query
         if not isinstance(query, basestring) or query == "":
@@ -166,9 +197,11 @@ class HuluSearch(Search):
             r.episode_number = int(video.find("episode-number").string)
             r.description = unicode(video.description.string)
             r.rating_fraction = float(video.rating.string) / self.rating_max
-            r.url = u"http://www.hulu.com/watch/" + video.id.string
-            r.image_url = unicode(video.find("thumbnail-url").string)
             r.duration_seconds = int(float(video.duration.string))
+
+            r.url = u"http://www.hulu.com/watch/" + video.id.string
+            r.image_url = HuluSearch.get_best_image_url(
+                    unicode(video.find("thumbnail-url").string))
 
             results.append(r)
 
@@ -178,9 +211,11 @@ class HuluSearch(Search):
             r.title = unicode(video.title.string)
             r.description = unicode(video.description.string)
             r.rating_fraction = float(video.rating.string) / self.rating_max
-            r.url = u"http://www.hulu.com/watch/" + video.id.string
-            r.image_url = unicode(video.find("thumbnail-url").string)
             r.duration_seconds = int(float(video.duration.string))
+
+            r.url = u"http://www.hulu.com/watch/" + video.id.string
+            r.image_url = HuluSearch.get_best_image_url(
+                    unicode(video.find("thumbnail-url").string))
 
             results.append(r)
 
