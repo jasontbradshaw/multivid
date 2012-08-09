@@ -329,7 +329,10 @@ class AmazonSearch(Search):
                     r.episode_number = int(attrs.episodesequence.string)
 
                 r.url = unicode(item.detailpageurl.string)
-                r.image_url = unicode(item.largeimage.url.string)
+
+                # only add the image if one is present
+                if item.largeimage is not None:
+                    r.image_url = unicode(item.largeimage.url.string)
 
                 # occasionally, there isn't a running time
                 mins = attrs.find("runningtime", units="minutes")
