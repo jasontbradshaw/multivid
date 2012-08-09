@@ -35,6 +35,7 @@
 
 body {
     background-color: @color-dark;
+    padding: 15px;
 }
 
 #search-bar {
@@ -42,7 +43,6 @@ body {
     .font(@font-size);
 
     width: 100%;
-    padding: 15px;
 
     @hpadding: @font-size * 0.5;
     @vpadding: @font-size * 0.333;
@@ -109,11 +109,51 @@ body {
                 font-size: 1.2em;
             }
 
-            // color results by brand
+            // color suggestions by brand
             @border-size: 3px;
-            &.amazon { border-left: @border-size solid @color-amazon; }
-            &.hulu { border-left: @border-size solid @color-hulu; }
-            &.netflix { border-left: @border-size solid @color-netflix; }
+            @border-style: solid;
+            &.amazon { border-left: @border-size @border-style @color-amazon; }
+            &.hulu { border-left: @border-size @border-style @color-hulu; }
+            &.netflix { border-left: @border-size @border-style @color-netflix; }
+        }
+    }
+}
+
+#results {
+    padding-top: 15px;
+    margin-right: -15px;
+
+    .result {
+        width: 230px;
+        height: 300px;
+        overflow: hidden;
+        float: left;
+
+        background-size: cover;
+        background-position: center;
+
+        @hmargin: 15px;
+        @vmargin: 15px;
+        margin-right: @hmargin;
+        margin-bottom: @vmargin;
+
+        // color results by brand
+        @border-size: 3px;
+        @border-style: solid;
+        &.amazon { border-top: @border-size @border-style @color-amazon; }
+        &.hulu { border-top: @border-size @border-style @color-hulu; }
+        &.netflix { border-top: @border-size @border-style @color-netflix; }
+
+        .series-title {
+            padding: 5px;
+            color: @color-bright;
+            background-color: fade(@color-mid, 60%);
+        }
+
+        .title {
+            padding: 5px;
+            color: @color-bright;
+            background-color: fade(@color-mid, 60%);
         }
     }
 }

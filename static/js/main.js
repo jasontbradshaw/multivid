@@ -28,15 +28,18 @@ require([
     'backbone',
     'mustache',
     'text!/static/templates/search_bar.html.mustache',
-    'text!/static/templates/ac_suggestion.html.mustache'
+    'text!/static/templates/results.html.mustache',
+    'text!/static/templates/ac_suggestion.html.mustache',
+    'text!/static/templates/result.html.mustache'
 ],
-function ($, _, Backbone, Mustache, tmplSearchBar, tmplAcSuggestion) {
+function ($, _, Backbone, Mustache, tmplSearchBar, tmplResults, tmplAcSuggestion, tmplResult) {
 
 // the search bar
 var SearchBar = Backbone.Model.extend({
     defaults: {
         query: '',
         acSuggestionList: null,
+        resultsList: null,
 
         // minimum amount of time between AJAX calls
         minUpdateIntervalMs: 200,
@@ -51,8 +54,11 @@ var SearchBar = Backbone.Model.extend({
 
         // set a timeout to update once input is done coming for a bit
         var timeoutId = setTimeout(_.bind(function () {
-            // update suggestion list and clear the timeout id
+            // update suggestion list and results
             this.get('acSuggestionList').updateSuggestions(this.get('query'));
+            this.get('resultsList').updateResults(this.get('query'));
+
+            // clear the timeout id
             this.set({'timeoutId': null});
 
         }, this), this.get('minUpdateIntervalMs'));
@@ -185,24 +191,124 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
     }
 });
 
+// a generic search result that encompasses all types
+var Result = Backbone.Model.extend({
+    defaults: {
+        type: null,
+        provider: null,
+
+        title: '',
+        series_title: '',
+        description: '',
+
+        season_number: null,
+        episode_number: null,
+        season_count: null,
+        episode_count: null,
+
+        duration_seconds: 0,
+        rating_fraction: 0,
+
+        url: null,
+        image_url: null
+    }
+});
+
+var ResultList = Backbone.Collection.extend({
+    model: Result,
+    url: '/search/find',
+
+    updateResults: function (query) {
+        var xhr = $.getJSON(this.url, {'query': query});
+
+        // update the collection on reset
+        xhr.success(_.bind(function (data) {
+            this.reset(data.results);
+        }, this));
+    }
+});
+
+var ResultListView = Backbone.View.extend({
+    template: Mustache.compile(tmplResults),
+    itemTemplate: Mustache.compile(tmplResult),
+
+    defaults: {
+        collection: null, // the result collection
+        model: null // the search bar
+    },
+
+    initialize: function (models, options) {
+        this.collection.on('reset', this.render, this);
+
+        // build the container and add it to the body
+        this.setElement($(this.template()));
+        this.$el.appendTo($('body'));
+
+        // store any passed-in options
+        this.options = options || {};
+
+        // set default options
+        if (typeof this.options.maxResultsRendered === 'undefined') {
+            this.options.maxResultsRendered = 15;
+        }
+    },
+
+    render: function () {
+        // NOTE: functions identically to the render in the AC suggestions
+
+        var brandResults = {};
+        _.each(this.collection.toJSON(), function (result) {
+            if (!brandResults[result.provider]) {
+                brandResults[result.provider] = [];
+            }
+
+            brandResults[result.provider].push(result);
+        }, this);
+
+        while (_.flatten(brandResults).length >
+                this.options.maxResultsRendered) {
+            _.max(brandResults, function (s) { return _.size(s); }).pop();
+        }
+
+        this.$el.children().remove();
+
+        _.each(_.flatten(brandResults), function (result) {
+            this.$el.append(this.itemTemplate(result));
+        }, this);
+
+        return this;
+    }
+});
+
 //
 // ENTRY POINT
 //
 
 $(function () {
+    // where searching takes place
     var searchBar = new SearchBar();
     var searchBarView = new SearchBarView({
         model: searchBar
     });
 
+    // autocomplete suggestions within the search bar
     var acSuggestionList = new AutocompleteSuggestionList();
     var acSuggestionListView = new AutocompleteSuggestionListView({
-        collection: acSuggestionList,
         model: searchBar,
+        collection: acSuggestionList,
         el: $('#search-bar ul')
-    }, {maxSuggestionsRendered: 16});
+    }, {maxSuggestionsRendered: 18});
 
+    // search results
+    var resultsList = new ResultList();
+    var resultsListView = new ResultListView({
+        model: searchBar,
+        collection: resultsList
+    }, {maxResultsRendered: 15});
+
+    // add the suggestions/results collections to the search bar
     searchBar.set({acSuggestionList: acSuggestionList});
+    searchBar.set({resultsList: resultsList});
 });
 
 });
