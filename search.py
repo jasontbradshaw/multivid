@@ -453,39 +453,41 @@ class NetflixSearch(Search):
         response = requests.get(self.search_url, params=params)
 
         results = []
-        for item in response.json["catalog"]:
+        if "catalog" in response.json:
+            for item in response.json["catalog"]:
 
-            # figure out what kind of result we're dealing with
-            if "movie" in item["id"]:
-                r = containers.MovieResult(self.name)
-            elif "series" in item["id"]:
-                r = containers.SeriesResult(self.name)
-                r.episode_count = item["episode_count"]
-                r.season_count = item["season_count"]
+                # figure out what kind of result we're dealing with
+                if "movie" in item["id"]:
+                    r = containers.MovieResult(self.name)
+                elif "series" in item["id"]:
+                    r = containers.SeriesResult(self.name)
+                    r.episode_count = item["episode_count"]
+                    r.season_count = item["season_count"]
 
-            r.title = item["title"]["regular"]
-            r.description = item["synopsis"]["regular"]
-            r.rating_fraction = item["average_rating"] / self.rating_max
-            r.url = item["web_page"]
+                r.title = item["title"]["regular"]
+                r.description = item["synopsis"]["regular"]
+                r.rating_fraction = item["average_rating"] / self.rating_max
+                r.url = item["web_page"]
 
-            # pick the largest image size available
-            largest_size = 0
-            image_url = None
-            for size_str, url in item["box_art"].items():
-                size_num = int(size_str.replace("pix_w", ""))
-                if size_num >= largest_size:
-                    largest_size = size_num
-                    image_url = url
-            r.image_url = image_url
+                # pick the largest image size available
+                largest_size = 0
+                image_url = None
+                for size_str, url in item["box_art"].items():
+                    size_num = int(size_str.replace("pix_w", ""))
+                    if size_num >= largest_size:
+                        largest_size = size_num
+                        image_url = url
+                r.image_url = image_url
 
-            # NOTE: no duration information comes back, so we don't fill it out.
-            # this could be remedied with the bulk request API, if necessary.
+                # NOTE: no duration information comes back, so we don't fill it
+                # out.  this could be remedied with the bulk request API, if
+                # necessary.
 
-            # NOTE: episodes aren't directly returned as part of the search,
-            # only (seemingly) as part of a series. since series are much more
-            # useful than individual episodes, we leave it alone.
+                # NOTE: episodes aren't directly returned as part of the search,
+                # only (seemingly) as part of a series. since series are much
+                # more useful than individual episodes, we leave it alone.
 
-            results.append(r)
+                results.append(r)
 
         return results
 
