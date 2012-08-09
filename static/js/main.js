@@ -150,7 +150,6 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
     },
 
     render: function () {
-
         // add all the new suggestions
         var brandSuggestions = {};
         _.each(this.collection.toJSON(), function (suggestion) {
@@ -161,7 +160,7 @@ var AutocompleteSuggestionListView = Backbone.View.extend({
             brandSuggestions[suggestion.provider].push(suggestion);
         }, this);
 
-        // remove suggestions round-robin until we have the correct number
+        // remove suggestions until we have the correct number
         while (_.flatten(brandSuggestions).length >
                 this.options.maxSuggestionsRendered) {
             // remove the last suggestion of the brand with the most suggestions
