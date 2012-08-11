@@ -68,55 +68,6 @@ body {
         // remove ugly built-in highlighting when the box is focused
         &:focus { outline: none; }
     }
-
-    // the autocomplete suggestion list
-    ul {
-        width: inherit;
-
-        // make the suggestions show up, but not take up any vertical space
-        height: 0;
-        overflow-y: visible;
-
-        // a suggestion
-        li {
-            color: @color-bright;
-            opacity: 0.2;
-
-            cursor: pointer;
-
-            padding-left: @hpadding;
-            padding-right: @hpadding;
-            padding-top: @vpadding;
-            padding-bottom: @vpadding;
-
-            // don't let text wrap onto multiple lines
-            width: inherit;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-
-            // quick fade-in
-            -webkit-animation: fade-in 50ms;
-
-            // smooth highlight animation
-            -webkit-transition: opacity 150ms;
-            -webkit-transition: font-size 150ms;
-
-            // make sure the suggestion's total height doesn't change
-            line-height: @font-size;
-            &:hover {
-                opacity: 1.0;
-                font-size: 1.2em;
-            }
-
-            // color suggestions by brand
-            @border-size: 3px;
-            @border-style: solid;
-            &.amazon { border-left: @border-size @border-style @color-amazon; }
-            &.hulu { border-left: @border-size @border-style @color-hulu; }
-            &.netflix { border-left: @border-size @border-style @color-netflix; }
-        }
-    }
 }
 
 #results {
@@ -152,5 +103,11 @@ body {
 
         .series-title { .title-common; }
         .title { .title-common; }
+
+        -webkit-transition-property: box-shadow;
+        -webkit-transition-duration: 200ms;
+        &:hover {
+            box-shadow: 0 0 30px grey;
+        }
     }
 }

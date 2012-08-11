@@ -29,43 +29,21 @@ require([
     'mustache',
     'text!/static/templates/search_bar.html.mustache',
     'text!/static/templates/results.html.mustache',
-    'text!/static/templates/ac_suggestion.html.mustache',
     'text!/static/templates/result.html.mustache'
 ],
-function ($, _, Backbone, Mustache, tmplSearchBar, tmplResults, tmplAcSuggestion, tmplResult) {
+function ($, _, Backbone, Mustache, tmplSearchBar, tmplResults, tmplResult) {
 
 // the search bar
 var SearchBar = Backbone.Model.extend({
     defaults: {
         query: '',
-        acSuggestionList: null,
-        resultsList: null,
-
-        // minimum amount of time between AJAX calls
-        minUpdateIntervalMs: 200,
-        timeoutId: null // id for the last update timeout
+        resultsList: null
     },
 
-    updateSuggestions: function () {
-        // clear any existing update timeout
-        if (this.get('timeoutId') !== null) {
-            clearTimeout(this.get('timeoutId'));
-        }
-
-        // set a timeout to update once input is done coming for a bit
-        var timeoutId = setTimeout(_.bind(function () {
-            // update suggestion list and results
-            this.get('acSuggestionList').updateSuggestions(this.get('query'));
-            this.get('resultsList').updateResults(this.get('query'));
-
-            // clear the timeout id
-            this.set({'timeoutId': null});
-
-        }, this), this.get('minUpdateIntervalMs'));
-
-        // store the timeout id for the next update call
-        this.set({'timeoutId': timeoutId});
-    }
+    updateResults: _.debounce(function () {
+        // update search results
+        this.get('resultsList').updateResults(this.get('query'));
+    }, 200)
 });
 
 var SearchBarView = Backbone.View.extend({
@@ -96,7 +74,7 @@ var SearchBarView = Backbone.View.extend({
     inputUpdate: function () {
         // update the model's query value and suggest more options
         this.model.set({query: this.$input.val()});
-        this.model.updateSuggestions();
+        this.model.updateResults();
     },
 
     mirrorQuery: function () {
@@ -105,89 +83,6 @@ var SearchBarView = Backbone.View.extend({
             this.$input.val(this.model.get('query'));
         }
         this.$input.focus();
-    }
-});
-
-// a single suggestion below the search bar
-var AutocompleteSuggestion = Backbone.Model.extend({
-    defaults: {
-        provider: null,
-        suggestion: ''
-    }
-});
-
-// the suggestions collection below the search bar
-var AutocompleteSuggestionList = Backbone.Collection.extend({
-    model: AutocompleteSuggestion,
-    url: '/search/autocomplete',
-
-    updateSuggestions: function (query) {
-        var xhr = $.getJSON(this.url, {'query': query});
-
-        // update the collection on reset
-        xhr.success(_.bind(function (data) {
-            this.reset(data.results);
-        }, this));
-    }
-});
-
-var AutocompleteSuggestionListView = Backbone.View.extend({
-    itemTemplate: Mustache.compile(tmplAcSuggestion),
-
-    events: {
-        'click li': 'clickSuggestion'
-    },
-
-    defaults: {
-        collection: null, // the AC collection
-        model: null // the search bar
-    },
-
-    initialize: function (models, options) {
-        this.collection.on('reset', this.render, this);
-
-        // store any passed-in options
-        this.options = options || {};
-
-        // set default options
-        if (typeof this.options.maxSuggestionsRendered === 'undefined') {
-            this.options.maxSuggestionsRendered = 10;
-        }
-    },
-
-    render: function () {
-        // add all the new suggestions
-        var brandSuggestions = {};
-        _.each(this.collection.toJSON(), function (suggestion) {
-            if (!brandSuggestions[suggestion.provider]) {
-                brandSuggestions[suggestion.provider] = [];
-            }
-
-            brandSuggestions[suggestion.provider].push(suggestion);
-        }, this);
-
-        // remove suggestions until we have the correct number
-        while (_.flatten(brandSuggestions).length >
-                this.options.maxSuggestionsRendered) {
-            // remove the last suggestion of the brand with the most suggestions
-            _.max(brandSuggestions, function (s) { return _.size(s); }).pop();
-        }
-
-        // clear out the old suggestions
-        this.$el.children().remove();
-
-        // add the new suggestions
-        _.each(_.flatten(brandSuggestions), function (suggestion) {
-            this.$el.append(this.itemTemplate(suggestion));
-        }, this);
-
-        return this;
-    },
-
-    clickSuggestion: function (e) {
-        // set the query to the clicked value, then reset the suggestions
-        this.model.set({query: $(e.target).text()});
-        this.collection.reset();
     }
 });
 
@@ -291,14 +186,6 @@ $(function () {
         model: searchBar
     });
 
-    // autocomplete suggestions within the search bar
-    var acSuggestionList = new AutocompleteSuggestionList();
-    var acSuggestionListView = new AutocompleteSuggestionListView({
-        model: searchBar,
-        collection: acSuggestionList,
-        el: $('#search-bar ul')
-    }, {maxSuggestionsRendered: 18});
-
     // search results
     var resultsList = new ResultList();
     var resultsListView = new ResultListView({
@@ -306,8 +193,7 @@ $(function () {
         collection: resultsList
     }, {maxResultsRendered: 15});
 
-    // add the suggestions/results collections to the search bar
-    searchBar.set({acSuggestionList: acSuggestionList});
+    // add the results collection to the search bar
     searchBar.set({resultsList: resultsList});
 });
 
