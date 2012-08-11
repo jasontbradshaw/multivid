@@ -121,6 +121,10 @@ var ResultListView = Backbone.View.extend({
         model: null // the search bar
     },
 
+    events: {
+        'click .result': 'clickResult'
+    },
+
     initialize: function (models, options) {
         this.collection.on('reset', this.render, this);
 
@@ -161,6 +165,13 @@ var ResultListView = Backbone.View.extend({
         }, this);
 
         return this;
+    },
+
+    clickResult: function (e) {
+        // hide any expanded results, show the newly clicked one
+        var expandedClass = 'expanded'
+        $('.result').removeClass(expandedClass);
+        $(e.target).addClass(expandedClass);
     }
 });
 

@@ -109,5 +109,42 @@ body {
         &:hover {
             box-shadow: 0 0 30px grey;
         }
+
+        // the expanded view of the result
+        .details { display: none; }
+    }
+
+    // the expanded version of a result
+    .result.expanded {
+        // hide the selected result, to make it clear that it's expanded
+        visibility: hidden;
+
+        .details {
+            // reset parent styles to make this element 'normal'
+            visibility: visible;
+            display: block;
+            color: white;
+
+            background-color: @color-mid;
+            padding: 30px;
+
+            position: fixed;
+            left: 30%;
+            top: 20%;
+            bottom: auto;
+            right: auto;
+
+            width: 1000px;
+
+            .img-large {
+                float: left;
+
+                width: 600px;
+                height: 500px;
+
+                background-size: cover;
+                background-position: center;
+            }
+        }
     }
 }

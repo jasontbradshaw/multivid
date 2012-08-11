@@ -1,8 +1,26 @@
-<div class='result {{type}} {{provider}}'
+<div class='result {{provider}}'
         style='background-image: url({{image_url}});'>
 
     {{#series_title}}
     <div class='series-title'>{{series_title}}</div>
     {{/series_title}}
     <div class='title'>{{title}}</div>
+
+    <div class='details'>
+        <div class='img-large'
+            style='background-image: url({{image_url}});'></div>
+        <div class='info'>
+            {{#series_title}}
+            <div class='series-title'>{{series_title}}</div>
+            {{/series_title}}
+            <div class='title'>{{title}}</div>
+            {{#series_title}}
+            <div class='episode-info'>S{{season_number}}E{{episode_number}}</div>
+            {{/series_title}}
+
+            {{#description}}
+            <p class='description'>{{description}}</p>
+            {{/description}}
+        </div>
+    </div>
 </div>
