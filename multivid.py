@@ -1,7 +1,7 @@
 import itertools
 
 import search
-import tmap
+import gevent
 
 # the canonical list of search plugins used to do all the searches
 SEARCHERS = [
@@ -11,16 +11,14 @@ SEARCHERS = [
 ]
 
 def autocomplete(query):
-    # the query function we'll map onto the searchers
-    qf = lambda s: s.autocomplete(query)
-
     # get the results from the searchers
-    searcher_results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
+    jobs = [gevent.spawn(s.autocomplete, query) for s in SEARCHERS]
+    gevent.joinall(jobs)
 
     # return the results as one list
-    return [r for r in itertools.chain(*searcher_results)]
+    return [job.value for job in jobs]
 
 def find(query):
-    qf = lambda s: s.find(query)
-    searcher_results = tmap.map(qf, SEARCHERS, num_threads=len(SEARCHERS))
-    return [r for r in itertools.chain(*searcher_results)]
+    jobs = [gevent.spawn(s.find, query) for s in SEARCHERS]
+    gevent.joinall(jobs)
+    return [job.value for job in jobs]

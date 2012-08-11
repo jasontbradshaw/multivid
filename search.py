@@ -10,8 +10,8 @@ import urllib
 
 import bs4
 import requests
+import grequests
 
-import arequests
 import containers
 
 class Search(object):
@@ -113,12 +113,12 @@ class HuluSearch(Search):
         best_img_url = orig_image_url.replace(orig_size, better_size)
 
         # build the better HEAD requests
-        better_img_req = arequests.head(better_img_url)
-        best_img_req = arequests.head(best_img_url)
+        better_img_req = grequests.head(better_img_url)
+        best_img_req = grequests.head(best_img_url)
 
         # try to return the best image URL possible
         best_url = orig_image_url
-        for response in arequests.map((better_img_req, best_img_req)):
+        for response in grequests.map((better_img_req, best_img_req)):
             if response.ok:
                 best_url = response.url
 
@@ -145,11 +145,11 @@ class HuluSearch(Search):
         }
 
         # build the requests
-        tv_request = arequests.get(self.search_url, params=tv_params)
-        movie_request = arequests.get(self.search_url, params=movie_params)
+        tv_request = grequests.get(self.search_url, params=tv_params)
+        movie_request = grequests.get(self.search_url, params=movie_params)
 
         # get both requests and parse their XML payloads
-        tv_response, movie_response = arequests.map((tv_request, movie_request))
+        tv_response, movie_response = grequests.map((tv_request, movie_request))
 
         tv_soup = bs4.BeautifulSoup(tv_response.text)
         movie_soup = bs4.BeautifulSoup(movie_response.text)
@@ -330,12 +330,12 @@ class AmazonSearch(Search):
         # get all the pages of results at once
         search_requests = []
         for i in xrange(1, self.pages_to_get + 1):
-            r = arequests.get(self.search_url, params=params)
+            r = grequests.get(self.search_url, params=params)
             search_requests.append(r)
 
         # get all the items from the responses as soup objects
         results = []
-        for response in arequests.map(search_requests):
+        for response in grequests.map(search_requests):
             soup = bs4.BeautifulSoup(response.text)
 
             # iterate over all the item nodes
