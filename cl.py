@@ -25,10 +25,6 @@ if __name__ == "__main__":
     pp(ac_results)
     print
 
-    find_results = multivid.find(query)
-    for originator, results in find_results.items():
-        find_results[originator] = [r.to_dict() for r in results]
-
     print "search results for '" + query + "':"
-    pp(find_results)
+    pp(multivid.find(query))
     print
