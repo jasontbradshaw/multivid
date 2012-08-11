@@ -66,23 +66,12 @@ var SearchBarView = Backbone.View.extend({
         // cache a ref to the input and focus it
         this.$input = this.$el.find('input');
         this.$input.focus();
-
-        // update the input if the query changes
-        this.model.on('change:query', this.mirrorQuery, this);
     },
 
     inputUpdate: function () {
         // update the model's query value and suggest more options
         this.model.set({query: this.$input.val()});
         this.model.updateResults();
-    },
-
-    mirrorQuery: function () {
-        // copy the model's query option into the input if not focused
-        if (!this.$input.is(':focus')) {
-            this.$input.val(this.model.get('query'));
-        }
-        this.$input.focus();
     }
 });
 
